@@ -62,8 +62,18 @@ typedef struct {
     float r; //raggio di query, -1 se range query non richieste
     int silent; //1 per disabilitare le stampe, 0 altrimenti
     int display; //1 per stampare i risultati, 0 altrimenti
-    MATRIX U; //matrice U restituita dall'algoritmo PCA
-    MATRIX V; //matrice V restituita dall'algoritmo PCA
+
+//    MATRIX U; //matrice U restituita dall'algoritmo PCA
+//    MATRIX V; //matrice V restituita dall'algoritmo PCA
+
+    //strutture nostre
+    float* H; // matrice n*2*k delle regioni dei punti del dataset
+    float* U; // matrice degli score n*h
+    float* V; // matrice dei load d*h
+    float* u; // vettori colonna delle matrici u e v
+    float* v;
+    float* puntoP; // vettore di costruzione punto più vicino
+
     
     //STRUTTURE OUTPUT MODIFICABILI
     int* QA; //risposte alle query in forma di coppie di interi (id_query, id_vicino)
@@ -226,6 +236,71 @@ void range_query(params* input) {
     // -------------------------------------------------
 }
 
+
+
+float distanzaEuclidea(float* P,float* Q, int dimen){
+    int i;
+    float dist=0;
+
+    for(i=0; i<dimen; i++){
+        dist+= powf(P[i]-Q[i],2);    
+    }
+    return sqrtf(dist);
+
+}
+
+// 0 Hmin , 1 Hmax, nP numerorigaPunto==(indiceDataset), 
+float distanza(float* Q, int dimen, int nP, params* input){
+    int j;
+    
+
+    for(j=0; j<dimen; j++){
+        if(Q[j]<= input-> H[nP*(2*dimen)+j+0]){ // prendo min della coordinata della regione
+            input->puntoP[j]= input-> H[nP*(2*dimen)+j+0];
+        }
+
+        else if (Q[j]>= input-> H[nP*(2*dimen)+j+1]){
+            input->puntoP[j]= input-> H[nP*(2*dimen)+j+1];
+        }
+        else
+        {
+            input->puntoP[j]=Q[j];
+        }         
+    }
+    return distanzaEuclidea(input->puntoP, Q, dimen);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//******************************************************************************************************************
+//******************************************************************************************************************
+//******************************************************************************************************************
+//******************************************************************************************************************
+//******************************************************************************************************************
+//******************************************************************************************************************
+//******************************************************************************************************************
+//******************************************************************************************************************
+//******************************************************************************************************************
+//******************************************************************************************************************
+//******************************************************************************************************************
+//******************************************************************************************************************
+//******************************************************************************************************************
+
+
 int main(int argc, char** argv) {
     
     char fname[256];
@@ -366,6 +441,15 @@ int main(int argc, char** argv) {
             printf("Kdtree building disabled\n");
         }
     }
+
+    //allocazione strutture dati
+    input-> H= (float*) malloc(input->n*input->k*2 * sizeof(float));
+    input-> U= (float*) malloc(input->n*input->h * sizeof(float));
+    input-> V= (float*) malloc(input->d*input->h * sizeof(float));
+    input-> u= (float*) malloc(input->n * sizeof(float));
+    input-> v= (float*) malloc(input->d* sizeof(float));
+    input-> puntoP= (float*) malloc(input->k * sizeof(float));
+
 
     //
     // Calcolo PCA
