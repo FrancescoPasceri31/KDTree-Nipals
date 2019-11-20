@@ -47,7 +47,16 @@
 #include <xmmintrin.h>
 
 #define	MATRIX		float*
-#define	KDTREE		float* // modificare con il tipo di dato utilizzato
+
+typedef struct
+{
+    float P;
+ int Livello;
+ struct KDTREET *figlioSx, *figlioDx;
+ }KDTREET;
+
+#define	KDTREE		KDTREET* // modificare con il tipo di dato utilizzato
+
 
 typedef struct {
     char* filename; //nome del file, estensione .ds per il data set, estensione .qs per l'eventuale query set
@@ -213,11 +222,37 @@ void pca(params* input) {
 *	K-d-Tree
 * 	======================
 */
+
+//int cercaMediano(MATRIX dataset, int c, params *input){
+//    int colonne=input->k;
+//    if(input->h > 0 ) colonne= input-> h;
+//
+//
+//}
+
+KDTREE buildTree(MATRIX dataset,int livello, params *input){
+    if( dataset == NULL) return NULL;
+    
+    int c= livello%input->k;
+
+    int Punto= cercaMediano(dataset,c,input);
+
+    MATRIX D1=creaDataset(dataset, c, Punto,0);
+    MATRIX D2=creaDataset(dataset, c, Punto,1);
+    KDTREE n= malloc(sizeof(KDTREET));
+    n->P=Punto;
+    n->figlioSx= buildTree(D1, livello+1, input);
+    n->figlioDx= buildTree(D2, livello+1, input);
+    
+    return n;
+}
+
 void kdtree(params* input) {
     
     // -------------------------------------------------
     // Codificare qui l'algoritmo di costruzione
-    // -------------------------------------------------
+    // -------------------------------------------------7
+    input->kdtree= buildTree(input->ds, 0, input);
 }
 
 /*
@@ -445,9 +480,9 @@ int main(int argc, char** argv) {
     //allocazione strutture dati
     input-> H= (float*) malloc(input->n*input->k*2 * sizeof(float));
     input-> U= (float*) malloc(input->n*input->h * sizeof(float));
-    input-> V= (float*) malloc(input->d*input->h * sizeof(float));
+    input-> V= (float*) malloc(input->k*input->h * sizeof(float));
     input-> u= (float*) malloc(input->n * sizeof(float));
-    input-> v= (float*) malloc(input->d* sizeof(float));
+    input-> v= (float*) malloc(input->k* sizeof(float));
     input-> puntoP= (float*) malloc(input->k * sizeof(float));
 
 
