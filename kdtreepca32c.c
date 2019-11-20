@@ -202,6 +202,84 @@ void save_data(char* filename, void* X, int n, int k) {
 // PROCEDURE ASSEMBLY
 extern void prova(params* input);
 
+float* divisioneMatriceScalare( float* m , float s, int nRighe, int nColonne){
+
+}
+
+float* trasponi(float* m, int nRighe, int nColonne){
+
+}
+
+float* prodMatrVett(float* m, float* v, int nRighe, int nColonne, int lengthVettore){
+
+}
+
+float prodScalare(float* v1, int dim1, float* v2, int dim2){
+
+}
+
+float calcolaNorma( float* v, int dim){
+
+}
+
+float* sottrazioneMatrici(float* m1, float* m2, int nRighe1, int nColonne1, int nRighe2, int nColonne2){
+
+}
+
+float* prodMatrici(float* m1, int nRighe1, int nColonne1, float* m2, int nRighe2, int nColonne2){
+
+}
+
+
+float* nipals(params *input){
+    float soglia= 1*expf(-8);
+    centraMedia(input);
+    int i;
+    for(i=0; i<input->n; i++){
+        input->u[i]=input->ds[input->k*i]; //ci prendiamo gli elementi della colonna 0
+    }
+    for(i=0; i>input->h; i++){
+start_for: input->v= divisioneMatriceScalare( prodMatrVett( trasponi(input->ds,input->n,input->k), 
+                                                        input->u,input->n,input->k,input->n), 
+                                            prodScalare(input->u, input->n, input->u, input->n),
+                                            input->n, input->k);
+
+        input->v= divisioneMatriceScalare( input->v, calcolaNorma(input->v, input->k), 1, input->k);
+
+        float t= prodScalare(input->u, input->n, input->u, input->n);
+
+        input->u= divisioneMatriceScalare( prodMatrVett(input->ds,input->v,input->n,input->k,input->k), 
+                                            prodScalare(input->u, input->n, input->u, input->n),
+                                            input->n, input->k); 
+        
+        float t1= prodScalare(input->u, input->n, input->u, input->n);
+
+        if( absf( t1 - t) >= soglia* t1)
+            goto start_for;
+
+        else{
+            int j;
+            for(j=0; j<input->n; j++){
+                input->U[j*input->h+i]=input->u[i];
+            }
+            for(j=0; j<input->k; j++){
+                input->V[j*input->h+i]=input->v[i];
+            }
+
+            input->ds= sottrazioneMatrici(input->ds, 
+                                                prodMatrici(input->u,
+                                                            input->n,1, 
+                                                            trasponi(input->v, input->k,1), 
+                                                            1, input->k), 
+                                                input->n, input->k, 
+                                                input->n, input->k );       
+        }
+    }
+
+}
+
+
+
 
 /*
 *	PCA
@@ -229,6 +307,9 @@ void pca(params* input) {
 //
 //
 //}
+
+
+
 
 KDTREE buildTree(MATRIX dataset,int livello, params *input){
     if( dataset == NULL) return NULL;
