@@ -50,7 +50,8 @@
 
 typedef struct
 {
-    float P;
+ int indP;
+ float P;
  int Livello;
  struct KDTREET *figlioSx, *figlioDx;
  }KDTREET;
@@ -82,7 +83,10 @@ typedef struct {
     float* u; // vettori colonna delle matrici u e v
     float* v;
     float* puntoP; // vettore di costruzione punto più vicino
-
+    
+// strutture per ricerca range
+    float* Point;
+    float* Qoint;
     
     //STRUTTURE OUTPUT MODIFICABILI
     int* QA; //risposte alle query in forma di coppie di interi (id_query, id_vicino)
@@ -203,35 +207,111 @@ void save_data(char* filename, void* X, int n, int k) {
 extern void prova(params* input);
 
 float* divisioneMatriceScalare( float* m , float s, int nRighe, int nColonne){
-
+    int i,j;
+    float mRis[nRighe][nColonne];
+        for(i=0; i<nRighe; i++){
+            for(j=0; j<nColonne; j++){
+                mRis[nRighe][nColonne]= m[ i*nColonne +j ]/s;
+            }
+        }
+        return *mRis;
 }
 
 float* trasponi(float* m, int nRighe, int nColonne){
+    int i, j;
+    float mRis[nRighe][nColonne];
+    for(i=0; i<nRighe; i++){
+        for(j=0; j<nColonne; j++){
+            mRis[nColonne][nRighe]= m[ i*nColonne +j ];
+        }
+    }
+    return *mRis;
 
 }
 
 float* prodMatrVett(float* m, float* v, int nRighe, int nColonne, int lengthVettore){
+    if( nRighe==lengthVettore){
+        int i,j;
+        float mRis[nRighe][lengthVettore];
+        for(i=0; i<nRighe; i++){
+            for(j=0; j<nColonne; j++){
+                mRis[nRighe][nColonne]= m[ i*nColonne +j ] *v[i];
+            }
+        }
+    return *mRis;
+    }
 
 }
 
 float prodScalare(float* v1, int dim1, float* v2, int dim2){
+    int i;
+    float r=0.0;
 
+    if(dim1=dim2){
+        for(i=0; i<dim1; i++)
+            r+= v1[i]*v2[i];
+    
+    return r;
+    }    
 }
 
 float calcolaNorma( float* v, int dim){
+    float r=0;
+    int i;
 
+    for(i=0; i<v[dim];i++){
+        r+= powf(v[i],2.0);
+    }
+    return sqrtf(r);
 }
 
 float* sottrazioneMatrici(float* m1, float* m2, int nRighe1, int nColonne1, int nRighe2, int nColonne2){
 
+    if (nRighe1==nRighe2 && nColonne1==nColonne2){
+        int i,j;
+        float mRis[nRighe1][nColonne1];
+
+        for(i=0; i<nRighe1; i++){
+            for(j=0; j<nColonne1; j++){
+                mRis[nRighe1][nColonne1]= m1[i*nColonne1 +j] - m2[i*nColonne1 +j] ;
+            }
+        }
+
+        return *mRis;            
+    }
 }
 
 float* prodMatrici(float* m1, int nRighe1, int nColonne1, float* m2, int nRighe2, int nColonne2){
 
+    if(nColonne1==nRighe1){
+
+    int i,j;
+    float mRis[nRighe1][nColonne2];
+
+    for(i=0; i<nRighe1; i++){
+        for(j=0; j<nColonne1; j++){
+            mRis[nColonne][nRighe]= m[ i*nColonne +j ];
+        }
+    }
+
+    return *mRis;
+    }
+
+}
+
+float distanzaEuclidea(float* P,float* Q, int dimen){
+    int i;
+    float dist=0;
+
+    for(i=0; i<dimen; i++){
+        dist+= powf(P[i]-Q[i],2);    
+    }
+    return sqrtf(dist);
+
 }
 
 
-float* nipals(params *input){
+void nipals(params *input){
     float soglia= 1*expf(-8);
     centraMedia(input);
     int i;
@@ -290,10 +370,11 @@ void pca(params* input) {
     // -------------------------------------------------
     // Codificare qui l'algoritmo PCA
     // -------------------------------------------------
-    prova(input);
+    //prova(input);
     // Calcola le matrici U e V
     // -------------------------------------------------
-    
+    nipals(input);
+
 }
 
 /*
@@ -311,19 +392,20 @@ void pca(params* input) {
 
 
 
-KDTREE buildTree(MATRIX dataset,int livello, params *input){
+KDTREE buildTree(MATRIX dataset,int livello, int col, params *input){
     if( dataset == NULL) return NULL;
     
-    int c= livello%input->k;
+    int c= livello%col;
 
-    int Punto= cercaMediano(dataset,c,input);
+    int indicePunto= cercaMediano(dataset,c,input);
 
-    MATRIX D1=creaDataset(dataset, c, Punto,0);
-    MATRIX D2=creaDataset(dataset, c, Punto,1);
+    MATRIX D1=creaDataset(dataset, c, indicePunto,0);
+    MATRIX D2=creaDataset(dataset, c, indicePunto,1);
     KDTREE n= malloc(sizeof(KDTREET));
-    n->P=Punto;
-    n->figlioSx= buildTree(D1, livello+1, input);
-    n->figlioDx= buildTree(D2, livello+1, input);
+    n->indP=indicePunto;
+    n->P= dataset[indicePunto*col+c];   
+    n->figlioSx= buildTree(D1, livello+1, col, input);
+    n->figlioDx= buildTree(D2, livello+1, col, input);
     
     return n;
 }
@@ -332,8 +414,54 @@ void kdtree(params* input) {
     
     // -------------------------------------------------
     // Codificare qui l'algoritmo di costruzione
-    // -------------------------------------------------7
-    input->kdtree= buildTree(input->ds, 0, input);
+    // -------------------------------------------------
+
+    if(input->h > 0){
+        input->kdtree= buildTree(input->U, 0, input->h, input);
+    }else{    
+        input->kdtree= buildTree(input->ds, 0, input->k, input);
+    }
+}
+
+float distance( int indQ, int indP, params* input) {
+    int j;
+    for(j=0; j< input->k; j++){
+        input->Qoint[j]=input->qs[indQ * input->k +j];
+        if(input->qs[indQ*input->k +j] <= input->H[ indP * input->k *2 + j*2])
+            input->Point[j]= input->H[ indP * input->k *2 + j*2];
+        else if ( input->qs[indQ*input->k +j] >= input->H[ indP * input->k *2 + j*2 +1])
+            input->Point[j]= input->H[ indP * input->k *2 + j*2 +1];
+        else 
+
+            input->Point[j]= input->qs[indQ * input->k +j];        
+    }
+    return distanzaEuclidea(input->Point, input->Qoint, input->k);
+}
+
+
+void ricercaRange(KDTREE n, int indQ, params* input){
+
+    if( distance(indQ, n->indP, input) > input->r) return 0;
+
+    int i;
+
+    for(i=0; i<input->k; i++){
+        input-> Point[i]= input->ds[n->indP*input->k+ i];
+        input-> Qoint[i]= input->qs[indQ*input->k+ i];
+    }
+    
+    if( distanzaEuclidea(input-> Point, input-> Qoint, input->k) <= input->r ){
+        input->QA[input->nQA * 2]=indQ;
+        input->QA[input->nQA * 2 +1]=n->indP;
+        input->nQA+=1;
+    }
+    if( n->figlioSx != NULL){
+        ricercaRange(n->figlioSx, indQ, input);
+    }
+    if( n->figlioDx != NULL){
+        ricercaRange(n->figlioDx, indQ, input);
+    }
+
 }
 
 /*
@@ -350,20 +478,18 @@ void range_query(params* input) {
     // (id_query, id_vicino)
     // o in altro formato
     // -------------------------------------------------
-}
 
-
-
-float distanzaEuclidea(float* P,float* Q, int dimen){
     int i;
-    float dist=0;
 
-    for(i=0; i<dimen; i++){
-        dist+= powf(P[i]-Q[i],2);    
+    for(i=0; i<input->nq; i++){
+        ricercaRange( input->kdtree, i, input);
     }
-    return sqrtf(dist);
+
+
 
 }
+
+
 
 // 0 Hmin , 1 Hmax, nP numerorigaPunto==(indiceDataset), 
 float distanza(float* Q, int dimen, int nP, params* input){
@@ -565,6 +691,8 @@ int main(int argc, char** argv) {
     input-> u= (float*) malloc(input->n * sizeof(float));
     input-> v= (float*) malloc(input->k* sizeof(float));
     input-> puntoP= (float*) malloc(input->k * sizeof(float));
+    input-> Point= malloc(sizeof(float)*input->k);
+    input-> Qoint= malloc(sizeof(float)*input->k);
 
 
     //
