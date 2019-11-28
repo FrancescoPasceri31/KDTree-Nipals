@@ -279,8 +279,7 @@ float prodScalare(float* v1, int dim1, float* v2, int dim2){
 float calcolaNorma( float* v, int dim){
     float r=0;
     int i;
-
-    for(i=0; i<v[dim];i++){
+    for(i=0; i<dim;i++){
         r+= powf(v[i],2.0);
     }
     return sqrtf(r);
@@ -356,8 +355,9 @@ float distanzaEuclidea(float* P,float* Q, int dimen){
 
 void centraMediaDS(params* input){
     int dimensione, punto;
+    float media;
     for(dimensione=0; dimensione<input->k; dimensione++){
-        float media;
+        media=0.0;
         for(punto=0; punto<input->n; punto++){
             media += input->ds[punto*input->k+dimensione];
         }
@@ -377,11 +377,7 @@ void nipals(params *input){
     for(i=0; i<input->n; i++){
         input->u[i]=input->ds[input->k*i]; //ci prendiamo gli elementi della colonna 0
     }
-
-    stampaMatrice(input->u, 1, input->n);
-
-    for(i=0; i>input->h; i++){
-
+    for(i=0; i<input->h; i++){
         start_for: 
         trasponi(input->ds, input->n, input->k, input->dsTras);
         float t= prodScalare(input->u, input->n, input->u, input->n);
@@ -395,7 +391,7 @@ void nipals(params *input){
 
         float t1= prodScalare(input->u, input->n, input->u, input->n);
 
-        if( fabsf( t1 - t) >= soglia* t1)
+        if( fabsf( t1 - t) >= soglia*t1)
             goto start_for;
 
         else{
@@ -411,6 +407,7 @@ void nipals(params *input){
             sottrazioneMatrici(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
             //stampaMatrice(input->ds, input->n, input->k);
             //scanf("%d",&j);
+            printf("%d\t",i);
         }
     }
 
@@ -673,7 +670,7 @@ int main(int argc, char** argv) {
             par++;
         }
     }
-    
+
     //
     // Legge i dati e verifica la correttezza dei parametri
     //
@@ -685,6 +682,16 @@ int main(int argc, char** argv) {
     
     sprintf(fname, "%s.ds", input->filename);
     input->ds = load_data(fname, &input->n, &input->k);
+
+
+// AGGIUNTO IO ****************************************************
+// AGGIUNTO IO ****************************************************
+// AGGIUNTO IO ****************************************************
+// AGGIUNTO IO ****************************************************
+// AGGIUNTO IO ****************************************************
+//    input->n = 80;
+//    input->k = 3;
+//    input->nq = 20;
 
     if(input->h < 0){
         printf("Invalid value of PCA parameter h!\n");
@@ -767,13 +774,13 @@ int main(int argc, char** argv) {
     else
         printf("%.3f\n", time);
     
-
-    printf("\n----------------------------------------------------------\n");
+    
     stampaMatrice(input->U, input->n, input->h);
+        printf("\n----------------------------------------------------------\n");
+    stampaMatrice(input->V, input->k, input->h);
 
-
-    printf(">");
     int x;
+    printf(">");
     scanf("%d",&x);
 
     //
