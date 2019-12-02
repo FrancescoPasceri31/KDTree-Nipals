@@ -512,9 +512,9 @@ int cercaMediano(float* dataset, int dimensioneTaglio, int nCol, params* input){
     mergeSort(arr, 0, input->n-1, input);
     
     if(input->n%2!=0){
-        return arr[(input->n+1)/2];
+        return input->vetTmp[(input->n+1)/2];
     }else if(input->n%2==0){
-        return arr[((input->n/2))];
+        return input->vetTmp[((input->n/2))];
     }
 }
 
@@ -911,9 +911,18 @@ int main(int argc, char** argv) {
     //
     
 //AGGIUNTO IO******************************************************************************************
-stampaMatrice(input->ds, input->n, input->k);
-//cercaMediano(input->ds, 0, input->k, input);
+//stampaMatrice(input->U, input->n, input->h);
 
+//int indP = cercaMediano(input->U, 0, input->h, input);
+//printf("%d\n",indP);
+float** punt = creaDataset(input, input->U, input->h, 0, 75);
+float* d1 = punt[0];    // n/2 * h
+float* d2 = punt[1];  
+  
+stampaMatrice(d1,input->n/2,input->h);
+stampaMatrice(d2,input->n/2,input->h);  
+  
+  
     if(input->kdtree){
         t = clock();
         kdtree(input);
