@@ -616,17 +616,15 @@ float distance( int indQ, int indP, params* input) {
 }
 
 
-void ricercaRange(KDTREE n, int indQ, params* input){
-
-    int nColonne = input->h>0? input->h : input->k;
+void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE n, int indQ, params* input){
 
     if( distance(indQ, n->indP, input) > input->r) return 0;
 
     int i;
 
     for(i=0; i<nColonne; i++){
-        input-> Point[i]= input->ds[n->indP*nColonne+ i];
-        input-> Qoint[i]= input->qs[indQ*nColonne+ i];
+        input-> Point[i]= dataSet[n->indP*nColonne+ i];
+        input-> Qoint[i]= querySet[indQ*nColonne+ i];
     }
     
     if( distanzaEuclidea(input-> Point, input-> Qoint, nColonne) <= input->r ){
@@ -658,19 +656,22 @@ void range_query(params* input) {
     if(input->h>0){
         centraMediaQS(input);
         prodMatrici(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
-    }
 
     // Calcola il risultato come una matrice di nQA coppie di interi
     // (id_query, id_vicino)
     // o in altro formato
-    int i;
+        int i;
 
-    for(i=0; i<input->nq; i++){
-        ricercaRange( input->kdtree, i, input);
+        for(i=0; i<input->nq; i++){
+            ricercaRange(input->U, input->qsRidotto, input->h, input->kdtree, i, input);
+        }
+    }else{
+        int i;
+
+        for(i=0; i<input->nq; i++){
+            ricercaRange(input->ds, input->qs, input->k, input->kdtree, i, input);
+        }
     }
-
-
-
 }
 
 
