@@ -518,21 +518,58 @@ int cercaMediano(float* dataset, int dimensioneTaglio, int nCol, params* input){
     }
 }
 
-float* creaDataset(){
-    
+float** creaDataset(params *input, float* dataset, int col, int c, int indP){
+    int i;
+    int j1=0,j2=0;
+    int z;
+    float **ris = (float **) malloc( 2 * sizeof(float*));
+    float* dsMinore= (float* ) malloc((input->n/2 * col) *sizeof(float));
+    float* dsMaggiore= (float* ) malloc((input->n/2 * col) *sizeof(float));    
+
+    ris[0]= dsMinore;
+    ris[1]= dsMaggiore;
+
+    for(i=0; i<input->n; i++){
+        if(i!= indP){
+
+            if (dataset[i * col +c] <  dataset[indP * col + c]){
+
+                for(z=0; z< col; z++){
+                    dsMinore[j1*col + z] =dataset[i*col +z];
+                }
+                j1++;
+            }
+            else if (dataset[i * col +c] >=  dataset[indP * col + c]){
+                for(z=0; z< col; z++){
+                    dsMaggiore[j2*col + z] =dataset[i*col +z];
+                }
+                j2++;
+            }
+        }
+        else if( input-> n%2==0){
+               for(z=0; z< col; z++){
+                    dsMinore[j1*col + z] =dataset[i*col +z];
+                }
+                j1++;
+        }
+    }
+    return ris;
 }
 
 KDTREE buildTree(MATRIX dataset,int livello, int col, params *input){
     if( dataset == NULL) return NULL;
     int c= livello%col;
-    int indicePunto= cercaMediano(dataset,c, col, input);
-    MATRIX D1=creaDataset(dataset, c, indicePunto,0);
-    MATRIX D2=creaDataset(dataset, c, indicePunto,1);
+    int indicePunto= cercaMediano(dataset,c,col,input);
+
+    float** dueDataset= creaDataset( input, dataset, col, c , indicePunto);
+
+    //MATRIX D1=creaDataset(dataset, c, indicePunto,0);
+    //MATRIX D2=creaDataset(dataset, c, indicePunto,1);
     KDTREE n= malloc(sizeof(KDTREET));
     n->indP=indicePunto;
     n->P= dataset[indicePunto*col+c];   
-    n->figlioSx= buildTree(D1, livello+1, col, input);
-    n->figlioDx= buildTree(D2, livello+1, col, input);
+    n->figlioSx= buildTree(dueDataset[0], livello+1, col, input);
+    n->figlioDx= buildTree(dueDataset[1], livello+1, col, input);
     return n;
 }
 
