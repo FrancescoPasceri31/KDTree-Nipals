@@ -85,6 +85,8 @@ typedef struct {
     float* puntoP; // vettore di costruzione punto più vicino
     float* dsTras;   // dataset trasposto temporaneo k*n
 
+    int* vetTmp; // vettore usabile di n posizioni
+
 // strutture per centrare su media
     float* vetMediaDS; // vettore con ogni cella la media di una colonna del ds n*1
 
@@ -407,7 +409,7 @@ void nipals(params *input){
             sottrazioneMatrici(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
             //stampaMatrice(input->ds, input->n, input->k);
             //scanf("%d",&j);
-            printf("%d\t",i);
+            //printf("%d\t",i);
         }
     }
 
@@ -429,8 +431,91 @@ void pca(params* input) {
 * 	===================================================================================================================
 */
 
-int cercaMediano(float* dataset, int dimensioneTaglio, params* input){
+void merge(float* arr, int l, int m, int r, params* input) 
+{ 
+    int i, j, k; 
+    int n1 = m - l + 1; 
+    int n2 =  r - m; 
+  
+    /* create temp arrays */
+    float L[n1], R[n2]; 
+    int Lind[n1], Rind[n2];
+  
+    /* Copy data to temp arrays L[] and R[] */
+    for (i = 0; i < n1; i++){
+        L[i] = arr[l + i];
+        Lind[i] = input->vetTmp[l+i]; 
+    }
+    for (j = 0; j < n2; j++) {
+        R[j] = arr[m + 1+ j];
+        Rind[j] = input->vetTmp[m+1+j]; 
+    }
+  
+    /* Merge the temp arrays back into arr[l..r]*/
+    i = 0; // Initial index of first subarray 
+    j = 0; // Initial index of second subarray 
+    k = l; // Initial index of merged subarray 
+    while (i < n1 && j < n2) { 
+        if (L[i] <= R[j]) { 
+            arr[k] = L[i];
+            input->vetTmp[k] = Lind[i];
+            i++; 
+        } 
+        else{ 
+            arr[k] = R[j]; 
+            input->vetTmp[k] = Lind[j];
+            j++; 
+        } 
+        k++; 
+    } 
+  
+    /* Copy the remaining elements of L[], if there 
+       are any */
+    while (i < n1) { 
+        arr[k] = L[i]; 
+        input->vetTmp[k] = Lind[i];
+        i++; 
+        k++; 
+    } 
+  
+    /* Copy the remaining elements of R[], if there 
+       are any */
+    while (j < n2) { 
+        arr[k] = R[j];
+        input->vetTmp[k] = Lind[j];
+        j++; 
+        k++; 
+    } 
+} 
 
+void mergeSort(float* arr, int l, int r, params* input){
+    if (l < r){
+    // Finding mid element
+    int m = l+(r-l)/2;
+    // Recursively sorting both the halves
+    mergeSort(arr, l, m, input);
+    mergeSort(arr, m+1, r, input);
+
+    // Merge the array
+    merge(arr, l, m, r, input);
+    }
+}
+
+
+int cercaMediano(float* dataset, int dimensioneTaglio, int nCol, params* input){
+    int i;
+    float* arr = (float*) malloc(sizeof(float)*input->n);
+    for(i=0; i<input->n; i++){
+        arr[i] = dataset[i*nCol+dimensioneTaglio];
+        input->vetTmp[i] = i;
+    }
+    mergeSort(arr, 0, input->n-1, input);
+    
+    if(input->n%2!=0){
+        return arr[(input->n+1)/2];
+    }else if(input->n%2==0){
+        return arr[((input->n/2))];
+    }
 }
 
 float* creaDataset(){
@@ -440,7 +525,7 @@ float* creaDataset(){
 KDTREE buildTree(MATRIX dataset,int livello, int col, params *input){
     if( dataset == NULL) return NULL;
     int c= livello%col;
-    int indicePunto= cercaMediano(dataset,c,input);
+    int indicePunto= cercaMediano(dataset,c, col, input);
     MATRIX D1=creaDataset(dataset, c, indicePunto,0);
     MATRIX D2=creaDataset(dataset, c, indicePunto,1);
     KDTREE n= malloc(sizeof(KDTREET));
@@ -689,9 +774,9 @@ int main(int argc, char** argv) {
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************
-//    input->n = 80;
-//    input->k = 3;
-//    input->nq = 20;
+    input->n = 80;
+    input->k = 3;
+    input->nq = 20;
 
     if(input->h < 0){
         printf("Invalid value of PCA parameter h!\n");
@@ -746,13 +831,14 @@ int main(int argc, char** argv) {
     input-> u= (float*) malloc(input->n * sizeof(float));
     input-> v= (float*) malloc(input->k* sizeof(float));
     input-> puntoP= (float*) malloc(input->k * sizeof(float));
-    input-> Point= malloc(sizeof(float)*input->k);
-    input-> Qoint= malloc(sizeof(float)*input->k);
-    input-> vetMediaDS = malloc(sizeof(float) * input-> k);
-    input-> dsTras = malloc( sizeof(float) * input->n * input-> k );
-    input-> qsRidotto = malloc( sizeof(float) * input->nq * input-> h );
+    input-> Point= (float*) malloc(sizeof(float)*input->k);
+    input-> Qoint= (float*) malloc(sizeof(float)*input->k);
+    input-> vetMediaDS = (float*) malloc(sizeof(float) * input-> k);
+    input-> dsTras = (float*) malloc( sizeof(float) * input->n * input-> k );
+    input-> qsRidotto = (float*) malloc( sizeof(float) * input->nq * input-> h );
     
-    
+    input-> vetTmp = (int*) malloc(sizeof(int)*input->n);
+
     //
     // Calcolo PCA
     //
@@ -775,18 +861,22 @@ int main(int argc, char** argv) {
         printf("%.3f\n", time);
     
     
-    stampaMatrice(input->U, input->n, input->h);
-        printf("\n----------------------------------------------------------\n");
-    stampaMatrice(input->V, input->k, input->h);
+//    stampaMatrice(input->U, input->n, input->h);
+//        printf("\n----------------------------------------------------------\n");
+//    stampaMatrice(input->V, input->k, input->h);
 
-    int x;
-    printf(">");
-    scanf("%d",&x);
+//    int x;
+//    printf(">");
+//    scanf("%d",&x);
 
     //
     // Costruzione K-d-Tree
     //
     
+//AGGIUNTO IO******************************************************************************************
+stampaMatrice(input->ds, input->n, input->k);
+//cercaMediano(input->ds, 0, input->k, input);
+
     if(input->kdtree){
         t = clock();
         kdtree(input);
