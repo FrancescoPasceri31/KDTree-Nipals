@@ -633,10 +633,10 @@ void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE n, int i
         input->nQA+=1;
     }
     if( n->figlioSx != NULL){
-        ricercaRange(n->figlioSx, indQ, input);
+        ricercaRange(dataSet, querySet, nColonne, n->figlioSx, indQ, input);
     }
     if( n->figlioDx != NULL){
-        ricercaRange(n->figlioDx, indQ, input);
+        ricercaRange(dataSet, querySet, nColonne, n->figlioDx, indQ, input);
     }
 
 }
