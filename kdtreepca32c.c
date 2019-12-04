@@ -48,16 +48,13 @@
 
 #define	MATRIX		float*
 
-typedef struct
-{
- int indP;
- float P;
- int Livello;
- struct KDTREET *figlioSx, *figlioDx;
- }KDTREET;
-
-#define	KDTREE		KDTREET* // modificare con il tipo di dato utilizzato
-
+struct KDTREET {
+    int indP;
+    float P;
+    int Livello;
+    struct KDTREET *figlioSx;
+    struct KDTREET *figlioDx;
+ };
 
 typedef struct {
     char* filename; //nome del file, estensione .ds per il data set, estensione .qs per l'eventuale query set
@@ -68,7 +65,7 @@ typedef struct {
     int nq; //numero di punti del query set
     int h; //numero di componenti principali da calcolare 0 se PCA non richiesta
     int kdtree_enabled; //1 per abilitare la costruzione del K-d-Tree, 0 altrimenti
-    KDTREE kdtree; //riferimento al K-d-Tree, NULL se costruzione non richiesta
+    struct KDTREET *kdtreeRoot; //riferimento al K-d-Tree, NULL se costruzione non richiesta
     float r; //raggio di query, -1 se range query non richieste
     int silent; //1 per disabilitare le stampe, 0 altrimenti
     int display; //1 per stampare i risultati, 0 altrimenti
@@ -228,6 +225,21 @@ void stampaMatrice(float* m, int r, int c){
         {
             if(j==c-1) printf("%.2f", m[i*c+j]);
             else printf("%.2f\t", m[i*c+j]);
+        }
+        printf("\n");
+    }
+    
+}
+
+void stampaMatriceInt(int* m, int r, int c){
+    printf("\n");
+    int i,j;
+    for (i = 0; i < r; i++)
+    {
+        for (j = 0; j < c; j++)
+        {
+            if(j==c-1) printf("%d", m[i*c+j]);
+            else printf("%d ", m[i*c+j]);
         }
         printf("\n");
     }
@@ -431,103 +443,82 @@ void pca(params* input) {
 * 	===================================================================================================================
 */
 
-void merge(float* arr, int l, int m, int r, params* input) 
-{ 
-    int i, j, k; 
-    int n1 = m - l + 1; 
-    int n2 =  r - m; 
-  
-    /* create temp arrays */
-    float L[n1], R[n2]; 
-    int Lind[n1], Rind[n2];
-  
-    /* Copy data to temp arrays L[] and R[] */
-    for (i = 0; i < n1; i++){
-        L[i] = arr[l + i];
-        Lind[i] = input->vetTmp[l+i]; 
-    }
-    for (j = 0; j < n2; j++) {
-        R[j] = arr[m + 1+ j];
-        Rind[j] = input->vetTmp[m+1+j]; 
-    }
-  
-    /* Merge the temp arrays back into arr[l..r]*/
-    i = 0; // Initial index of first subarray 
-    j = 0; // Initial index of second subarray 
-    k = l; // Initial index of merged subarray 
-    while (i < n1 && j < n2) { 
-        if (L[i] <= R[j]) { 
-            arr[k] = L[i];
-            input->vetTmp[k] = Lind[i];
-            i++; 
-        } 
-        else{ 
-            arr[k] = R[j]; 
-            input->vetTmp[k] = Lind[j];
-            j++; 
-        } 
-        k++; 
-    } 
-  
-    /* Copy the remaining elements of L[], if there 
-       are any */
-    while (i < n1) { 
-        arr[k] = L[i]; 
-        input->vetTmp[k] = Lind[i];
-        i++; 
-        k++; 
-    } 
-  
-    /* Copy the remaining elements of R[], if there 
-       are any */
-    while (j < n2) { 
-        arr[k] = R[j];
-        input->vetTmp[k] = Lind[j];
-        j++; 
-        k++; 
-    } 
-} 
+void merge(float* a, int nElem, int p, int q, int r,params* input) {
+    
+    int i, j, k=0; 
+    
+    float b[nElem];
+    int index[nElem];
 
-void mergeSort(float* arr, int l, int r, params* input){
-    if (l < r){
-    // Finding mid element
-    int m = l+(r-l)/2;
-    // Recursively sorting both the halves
-    mergeSort(arr, l, m, input);
-    mergeSort(arr, m+1, r, input);
-
-    // Merge the array
-    merge(arr, l, m, r, input);
+    i = p;
+    j = q+1;
+    
+    while (i<=q && j<=r) {
+        if (a[i]<a[j]) {
+            b[k] = a[i];
+            index[k] = input->vetTmp[i];
+            i++;
+        } else {
+            b[k] = a[j];
+            index[k] = input->vetTmp[j];            
+            j++;
+        }
+        k++;
     }
+    while (i <= q) {
+        b[k] = a[i];
+        index[k] = input->vetTmp[i];
+        i++;
+        k++;
+    }
+    while (j <= r) {
+        b[k] = a[j];
+        index[k] = input->vetTmp[j];
+        j++;
+        k++;
+    }
+    for (k=p; k<=r; k++){
+        a[k] = b[k-p];
+        input->vetTmp[k] = index[k-p];
+    }
+    return; 
+}
+
+void mergeSort(float* a, int nElem, int p, int r, params* input) {
+    int q;
+    if (p < r) {
+        q = (p+r)/2;
+        mergeSort(a, nElem, p, q, input);
+        mergeSort(a, nElem, q+1, r, input);
+        merge(a, nElem, p, q, r, input);
+    }
+    return;
 }
 
 
-int cercaMediano(float* dataset, int dimensioneTaglio, int nCol, params* input){
+int cercaMediano(float* dataset, int nElem, int dimensioneTaglio, int nCol, params* input){
     int i;
-    float* arr = (float*) malloc(sizeof(float)*input->n);
-    for(i=0; i<input->n; i++){
+    float* arr = (float*) malloc(sizeof(float)*nElem);
+    for(i=0; i<nElem; i++){
         arr[i] = dataset[i*nCol+dimensioneTaglio];
         input->vetTmp[i] = i;
     }
-    mergeSort(arr, 0, input->n-1, input);
+    mergeSort(arr, nElem, 0, nElem-1, input);
     
     if(input->n%2!=0){
-        return input->vetTmp[(input->n+1)/2];
+        return input->vetTmp[ ((nElem+1)/2) -1 ];
     }else if(input->n%2==0){
-        return input->vetTmp[((input->n/2))];
+        return input->vetTmp[(nElem/2)-1];
     }
 }
 
-float** creaDataset(params *input, float* dataset, int col, int c, int indP){
+float** creaDataset(params *input, float* dataset ,int nElem, int col, int c, int indP){
     int i;
     int j1=0,j2=0;
     int z;
     float **ris = (float **) malloc( 2 * sizeof(float*));
-    float* dsMinore= (float* ) malloc((input->n/2 * col) *sizeof(float));
-    float* dsMaggiore= (float* ) malloc((input->n/2 * col) *sizeof(float));    
-
-    ris[0]= dsMinore;
-    ris[1]= dsMaggiore;
+    float* dsMinore= (float* ) malloc((nElem * col) *sizeof(float));
+    float* dsMaggiore= (float* ) malloc((nElem/2 * col) *sizeof(float));    
 
     for(i=0; i<input->n; i++){
         if(i!= indP){
@@ -553,24 +544,28 @@ float** creaDataset(params *input, float* dataset, int col, int c, int indP){
                 j1++;
         }
     }
+
+    ris[0]= dsMinore;
+    ris[1]= dsMaggiore;
+
     return ris;
 }
 
-KDTREE buildTree(MATRIX dataset,int livello, int col, params *input){
+struct KDTREET* buildTree(float* dataset,int nElem, int livello, int col, params *input){
     if( dataset == NULL) return NULL;
     int c= livello%col;
-    int indicePunto= cercaMediano(dataset,c,col,input);
+    int indicePunto= cercaMediano(dataset,nElem, c,col,input);
 
-    float** dueDataset= creaDataset( input, dataset, col, c , indicePunto);
+    float** dueDataset= creaDataset( input, dataset, nElem, col, c , indicePunto);
 
-    //MATRIX D1=creaDataset(dataset, c, indicePunto,0);
-    //MATRIX D2=creaDataset(dataset, c, indicePunto,1);
-    KDTREE n= malloc(sizeof(KDTREET));
-    n->indP=indicePunto;
-    n->P= dataset[indicePunto*col+c];   
-    n->figlioSx= buildTree(dueDataset[0], livello+1, col, input);
-    n->figlioDx= buildTree(dueDataset[1], livello+1, col, input);
-    return n;
+    struct KDTREET *curr = (struct KDTREET *)malloc(sizeof(struct KDTREET));
+
+    curr->indP=indicePunto;
+    curr->P= dataset[indicePunto*col+c];   
+    curr->figlioSx = buildTree(dueDataset[0], nElem/2, livello+1, col, input);
+    curr->figlioDx = buildTree(dueDataset[1], nElem/2, livello+1, col, input);
+
+    return curr;
 }
 
 void kdtree(params* input) {
@@ -580,10 +575,27 @@ void kdtree(params* input) {
     // -------------------------------------------------
 
     if(input->h > 0){
-        input->kdtree= buildTree(input->U, 0, input->h, input);
+        input->kdtreeRoot= buildTree(input->U, input->n, 0, input->h, input);
     }else{    
-        input->kdtree= buildTree(input->ds, 0, input->k, input);
+        input->kdtreeRoot= buildTree(input->ds, input->n, 0, input->k, input);
     }
+    
+   /* KDTREET** p = malloc(sizeof(KDTREET*) * input->n);
+    int pos=0;
+    p[pos] = input->kdtreeRoot;
+    int i;
+    for(i=0; i<input->n; i++){
+        printf("%d", p[i]->indP);
+        if( p[i]->figlioSx != NULL ){
+            pos += 1;
+            p[pos] = p[i]->figlioSx;
+        }
+        if( p[i]->figlioDx != NULL ){
+            pos += 1;
+            p[pos] = p[i]->figlioDx;
+        }
+    }
+    scanf(">%d",&i);*/
 }
 
 
@@ -616,7 +628,7 @@ float distance( int indQ, int indP, params* input) {
 }
 
 
-void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE n, int indQ, params* input){
+void ricercaRange(float* dataSet, float* querySet, int nColonne, struct KDTREET *n, int indQ, params* input){
 
     if( distance(indQ, n->indP, input) > input->r) return 0;
 
@@ -663,13 +675,13 @@ void range_query(params* input) {
         int i;
 
         for(i=0; i<input->nq; i++){
-            ricercaRange(input->U, input->qsRidotto, input->h, input->kdtree, i, input);
+            ricercaRange(input->U, input->qsRidotto, input->h, input->kdtreeRoot, i, input);
         }
     }else{
         int i;
 
         for(i=0; i<input->nq; i++){
-            ricercaRange(input->ds, input->qs, input->k, input->kdtree, i, input);
+            ricercaRange(input->ds, input->qs, input->k, input->kdtreeRoot, i, input);
         }
     }
 }
@@ -726,7 +738,7 @@ int main(int argc, char** argv) {
     
     input->filename = NULL;
     input->h = 0;
-    input->kdtree = NULL;
+    input->kdtreeRoot = NULL;
     input->r = -1;
     input->silent = 0;
     input->display = 1;
@@ -829,6 +841,12 @@ int main(int argc, char** argv) {
         sprintf(fname, "%s.qs", input->filename);
         int k;
         input->qs = load_data(fname, &input->nq, &k);
+// AGGIUNTO IO ****************************************************
+// AGGIUNTO IO ****************************************************
+// AGGIUNTO IO ****************************************************
+// AGGIUNTO IO ****************************************************
+// AGGIUNTO IO ****************************************************       
+        k=3;
         if(input->k != k){
             printf("Data set dimensions and query set dimensions are not compatible!\n");
             exit(1);
@@ -903,28 +921,23 @@ int main(int argc, char** argv) {
 //        printf("\n----------------------------------------------------------\n");
 //    stampaMatrice(input->V, input->k, input->h);
 
-//    int x;
-//    printf(">");
-//    scanf("%d",&x);
-
     //
     // Costruzione K-d-Tree
     //
     
 //AGGIUNTO IO******************************************************************************************
-//stampaMatrice(input->U, input->n, input->h);
-
 //int indP = cercaMediano(input->U, 0, input->h, input);
-//printf("%d\n",indP);
-float** punt = creaDataset(input, input->U, input->h, 0, 75);
-float* d1 = punt[0];    // n/2 * h
-float* d2 = punt[1];  
+//printf("%d , %0.2f\n",indP, input->U[indP*input->h+0]);
+
+//float** punt = creaDataset(input, input->U, input->h, 0, indP);
+//float* d1 = punt[0];    // n/2 * h
+//float* d2 = punt[1];  
   
-stampaMatrice(d1,input->n/2,input->h);
-stampaMatrice(d2,input->n/2,input->h);  
+//stampaMatrice(d1,input->n/2,input->h);
+//stampaMatrice(d2,input->n/2,input->h);  
   
   
-    if(input->kdtree){
+    if(input->kdtree_enabled){
         t = clock();
         kdtree(input);
         t = clock() - t;
