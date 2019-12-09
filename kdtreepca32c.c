@@ -504,6 +504,7 @@ int cercaMediano(float* dataset, int nElem, int dimensioneTaglio, int nCol, para
         input->vetTmp[i] = i;
     }
     mergeSort(arr, nElem, 0, nElem-1, input);
+    free(arr);
     
     if(input->n%2!=0){
         return input->vetTmp[ ((nElem+1)/2) -1 ];
@@ -517,7 +518,7 @@ float** creaDataset(params *input, float* dataset ,int nElem, int col, int c, in
     int j1=0,j2=0;
     int z;
     float **ris = (float **) malloc( 2 * sizeof(float*));
-    float* dsMinore= (float* ) malloc((nElem * col) *sizeof(float));
+    float* dsMinore= (float* ) malloc((nElem/2 * col) *sizeof(float));
     float* dsMaggiore= (float* ) malloc((nElem/2 * col) *sizeof(float));    
 
     for(i=0; i<input->n; i++){
@@ -558,14 +559,18 @@ struct KDTREET* buildTree(float* dataset,int nElem, int livello, int col, params
 
     float** dueDataset= creaDataset( input, dataset, nElem, col, c , indicePunto);
 
-    struct KDTREET *curr = (struct KDTREET *)malloc(sizeof(struct KDTREET));
+    stampaMatrice(dueDataset[0], nElem/2, col);
 
-    curr->indP=indicePunto;
-    curr->P= dataset[indicePunto*col+c];   
-    curr->figlioSx = buildTree(dueDataset[0], nElem/2, livello+1, col, input);
-    curr->figlioDx = buildTree(dueDataset[1], nElem/2, livello+1, col, input);
 
-    return curr;
+    struct KDTREET curr;
+    curr.indP=indicePunto;
+    curr.P= dataset[indicePunto*col+c];   
+    curr.figlioSx = buildTree(dueDataset[0], nElem/2, livello+1, col, input);
+    curr.figlioDx = buildTree(dueDataset[1], nElem/2, livello+1, col, input);
+
+    struct KDTREET* k= &curr;
+
+    return k;
 }
 
 void kdtree(params* input) {
