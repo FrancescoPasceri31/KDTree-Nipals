@@ -558,7 +558,7 @@ float* creaDatasetMaggiore(params* input, float* dataset, int nElem, int col, in
     int j2=0;
     int z;
 
-    float* dsMaggiore= (float* ) malloc((nElem/2 * col) *sizeof(float));    
+    float* dsMaggiore= (float* ) malloc((input->n * col) *sizeof(float));    
 
      for(i=0; i<nElem; i++){
         if(i!= indP){
@@ -571,7 +571,7 @@ float* creaDatasetMaggiore(params* input, float* dataset, int nElem, int col, in
             }
         }
     }
-    printf("%p",&dsMaggiore);
+    //printf("%p",&dsMaggiore);
     return dsMaggiore;
     
 }
@@ -582,7 +582,7 @@ float* creaDatasetMinore(params* input, float* dataset, int nElem, int col, int 
     int j1=0;
     int z;
  
-    float* dsMinore= (float* ) malloc((nElem/2 * col) *sizeof(float));  
+    float* dsMinore= (float* ) malloc((input->n * col) *sizeof(float));  
 
     for(i=0; i<nElem; i++){
         if(i!= indP){
@@ -607,7 +607,7 @@ float* creaDatasetMinore(params* input, float* dataset, int nElem, int col, int 
 }
     
 struct KDTREET* buildTree(float* dataset,int nElem, int livello, int col, params *input){
-    if( dataset == NULL) return NULL;
+    if( nElem == 0) return NULL;
     int c= livello%col;
     int indicePunto= cercaMediano(dataset,nElem, c,col,input);
 
@@ -615,9 +615,9 @@ struct KDTREET* buildTree(float* dataset,int nElem, int livello, int col, params
     
     float* datasetMagg = creaDatasetMaggiore(input,dataset,nElem,col,c,indicePunto);
     float* datasetMin = creaDatasetMinore(input,dataset,nElem,col,c,indicePunto);
-    printf("%p",datasetMagg);
+    printf("%p \n",datasetMagg);
 
-    stampaMatrice(datasetMin, nElem/2, col);
+    stampaMatrice(datasetMagg, nElem/2, col);
 
 
     struct KDTREET curr;
@@ -626,7 +626,7 @@ struct KDTREET* buildTree(float* dataset,int nElem, int livello, int col, params
     curr.figlioSx = buildTree(datasetMin, nElem/2, livello+1, col, input);
     curr.figlioDx = buildTree(datasetMagg, nElem/2, livello+1, col, input);
 
-    printf("%d", curr.figlioSx->indP);
+    printf("%d \n", curr.figlioSx->indP);
 
     struct KDTREET* k= &curr;
 
