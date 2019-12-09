@@ -568,6 +568,8 @@ struct KDTREET* buildTree(float* dataset,int nElem, int livello, int col, params
     curr.figlioSx = buildTree(dueDataset[0], nElem/2, livello+1, col, input);
     curr.figlioDx = buildTree(dueDataset[1], nElem/2, livello+1, col, input);
 
+    printf("%d", curr.figlioSx->indP);
+
     struct KDTREET* k= &curr;
 
     return k;
