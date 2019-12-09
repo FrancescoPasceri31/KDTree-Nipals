@@ -513,15 +513,78 @@ int cercaMediano(float* dataset, int nElem, int dimensioneTaglio, int nCol, para
     }
 }
 
-float** creaDataset(params *input, float* dataset ,int nElem, int col, int c, int indP){
+//float** creaDataset(params *input, float* dataset ,int nElem, int col, int c, int indP){
+//    int i;
+//    int j1=0,j2=0;
+//    int z;
+//    float **ris = (float **) malloc( 2 * sizeof(float*));
+//    float* dsMinore= (float* ) malloc((nElem/2 * col) *sizeof(float));
+//    float* dsMaggiore= (float* ) malloc((nElem/2 * col) *sizeof(float));    
+//
+//    for(i=0; i<input->n; i++){
+//        if(i!= indP){
+//
+//            if (dataset[i * col +c] <  dataset[indP * col + c]){
+//
+//                for(z=0; z< col; z++){
+//                    dsMinore[j1*col + z] =dataset[i*col +z];
+//                }
+//                j1++;
+//            }
+//            else if (dataset[i * col +c] >=  dataset[indP * col + c]){
+//                for(z=0; z< col; z++){
+//                    dsMaggiore[j2*col + z] =dataset[i*col +z];
+//                }
+//                j2++;
+//            }
+//        }
+//        else if( input-> n%2==0){
+//               for(z=0; z< col; z++){
+//                    dsMinore[j1*col + z] =dataset[i*col +z];
+//                }
+//                j1++;
+//        }
+//    }
+//
+//    ris[0]= dsMinore;
+//    ris[1]= dsMaggiore;
+//
+//    return ris;
+//}
+
+
+float* creaDatasetMaggiore(params* input, float* dataset, int nElem, int col, int c, int indP){
     int i;
-    int j1=0,j2=0;
+    int j2=0;
     int z;
-    float **ris = (float **) malloc( 2 * sizeof(float*));
-    float* dsMinore= (float* ) malloc((nElem/2 * col) *sizeof(float));
+
     float* dsMaggiore= (float* ) malloc((nElem/2 * col) *sizeof(float));    
 
-    for(i=0; i<input->n; i++){
+     for(i=0; i<nElem; i++){
+        if(i!= indP){
+
+            if (dataset[i * col +c] >=  dataset[indP * col + c]){
+                for(z=0; z< col; z++){
+                    dsMaggiore[j2 * col + z] =dataset[i * col + z];
+                }
+                j2++;
+            }
+        }
+    }
+    printf("%p",&dsMaggiore);
+    return dsMaggiore;
+    
+}
+
+
+float* creaDatasetMinore(params* input, float* dataset, int nElem, int col, int c, int indP){
+        int i;
+    int j1=0;
+    int z;
+ 
+    float* dsMinore= (float* ) malloc((nElem/2 * col) *sizeof(float));  
+
+    for(i=0; i<nElem; i++){
         if(i!= indP){
 
             if (dataset[i * col +c] <  dataset[indP * col + c]){
@@ -531,14 +594,8 @@ float** creaDataset(params *input, float* dataset ,int nElem, int col, int c, in
                 }
                 j1++;
             }
-            else if (dataset[i * col +c] >=  dataset[indP * col + c]){
-                for(z=0; z< col; z++){
-                    dsMaggiore[j2*col + z] =dataset[i*col +z];
-                }
-                j2++;
-            }
         }
-        else if( input-> n%2==0){
+        else if( nElem%2==0){
                for(z=0; z< col; z++){
                     dsMinore[j1*col + z] =dataset[i*col +z];
                 }
@@ -546,27 +603,28 @@ float** creaDataset(params *input, float* dataset ,int nElem, int col, int c, in
         }
     }
 
-    ris[0]= dsMinore;
-    ris[1]= dsMaggiore;
-
-    return ris;
+    return dsMinore;
 }
-
+    
 struct KDTREET* buildTree(float* dataset,int nElem, int livello, int col, params *input){
     if( dataset == NULL) return NULL;
     int c= livello%col;
     int indicePunto= cercaMediano(dataset,nElem, c,col,input);
 
-    float** dueDataset= creaDataset( input, dataset, nElem, col, c , indicePunto);
+    //float** dueDataset= creaDataset( input, dataset, nElem, col, c , indicePunto);
+    
+    float* datasetMagg = creaDatasetMaggiore(input,dataset,nElem,col,c,indicePunto);
+    float* datasetMin = creaDatasetMinore(input,dataset,nElem,col,c,indicePunto);
+    printf("%p",datasetMagg);
 
-    stampaMatrice(dueDataset[0], nElem/2, col);
+    stampaMatrice(datasetMin, nElem/2, col);
 
 
     struct KDTREET curr;
     curr.indP=indicePunto;
     curr.P= dataset[indicePunto*col+c];   
-    curr.figlioSx = buildTree(dueDataset[0], nElem/2, livello+1, col, input);
-    curr.figlioDx = buildTree(dueDataset[1], nElem/2, livello+1, col, input);
+    curr.figlioSx = buildTree(datasetMin, nElem/2, livello+1, col, input);
+    curr.figlioDx = buildTree(datasetMagg, nElem/2, livello+1, col, input);
 
     printf("%d", curr.figlioSx->indP);
 
