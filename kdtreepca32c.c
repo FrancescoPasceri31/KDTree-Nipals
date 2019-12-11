@@ -48,13 +48,13 @@
 
 #define	MATRIX		float*
 
-struct KDTREET {
+typedef struct KDTREE {
     int indP;
     float P;
     int Livello;
-    struct KDTREET *figlioSx;
-    struct KDTREET *figlioDx;
- };
+    struct KDTREE *figlioSx;
+    struct KDTREE *figlioDx;
+ }KDTREE;
 
 typedef struct {
     char* filename; //nome del file, estensione .ds per il data set, estensione .qs per l'eventuale query set
@@ -65,7 +65,7 @@ typedef struct {
     int nq; //numero di punti del query set
     int h; //numero di componenti principali da calcolare 0 se PCA non richiesta
     int kdtree_enabled; //1 per abilitare la costruzione del K-d-Tree, 0 altrimenti
-    struct KDTREET *kdtreeRoot; //riferimento al K-d-Tree, NULL se costruzione non richiesta
+    KDTREE *kdtreeRoot; //riferimento al K-d-Tree, NULL se costruzione non richiesta
     float r; //raggio di query, -1 se range query non richieste
     int silent; //1 per disabilitare le stampe, 0 altrimenti
     int display; //1 per stampare i risultati, 0 altrimenti
@@ -215,6 +215,8 @@ extern void prova(params* input);
 /*
 *	Metodi di supporto
 */
+
+
 
 void stampaMatrice(float* m, int r, int c){
     printf("\n");
@@ -506,9 +508,9 @@ int cercaMediano(float* dataset, int nElem, int dimensioneTaglio, int nCol, para
     mergeSort(arr, nElem, 0, nElem-1, input);
     free(arr);
     
-    if(input->n%2!=0){
+    if(nElem%2!=0){
         return input->vetTmp[ ((nElem+1)/2) -1 ];
-    }else if(input->n%2==0){
+    }else if(nElem%2==0){
         return input->vetTmp[(nElem/2)-1];
     }
 }
@@ -553,12 +555,12 @@ int cercaMediano(float* dataset, int nElem, int dimensioneTaglio, int nCol, para
 //}
 
 
-float* creaDatasetMaggiore(params* input, float* dataset, int nElem, int col, int c, int indP){
+float* creaDatasetMaggiore(params* input, float* dataset, int nElem, int nDim, int col, int c, int indP){
     int i;
     int j2=0;
     int z;
 
-    float* dsMaggiore= (float* ) malloc((input->n * col) *sizeof(float));    
+    float* dsMaggiore= (float* ) malloc((nDim * col) *sizeof(float));    
 
      for(i=0; i<nElem; i++){
         if(i!= indP){
@@ -577,12 +579,12 @@ float* creaDatasetMaggiore(params* input, float* dataset, int nElem, int col, in
 }
 
 
-float* creaDatasetMinore(params* input, float* dataset, int nElem, int col, int c, int indP){
+float* creaDatasetMinore(params* input, float* dataset, int nElem, int nDim, int col, int c, int indP){
         int i;
     int j1=0;
     int z;
  
-    float* dsMinore= (float* ) malloc((input->n * col) *sizeof(float));  
+    float* dsMinore= (float* ) malloc((nDim * col) *sizeof(float));  
 
     for(i=0; i<nElem; i++){
         if(i!= indP){
@@ -595,42 +597,51 @@ float* creaDatasetMinore(params* input, float* dataset, int nElem, int col, int 
                 j1++;
             }
         }
-        else if( nElem%2==0){
-               for(z=0; z< col; z++){
-                    dsMinore[j1*col + z] =dataset[i*col +z];
-                }
-                j1++;
-        }
     }
 
     return dsMinore;
 }
+
+void calcolaDimDataset(float* dataset, int nElem, int col, int c, int mediano, int *dimMin, int *dimMagg){
+    int i;
+    for(i=0; i<nElem; i++){
+        if(i != mediano){
+            if (dataset[ i * col +c] < dataset[mediano*col + c]) *dimMin+=1;
+            else *dimMagg+=1;
+        }
+    }
+}
     
-struct KDTREET* buildTree(float* dataset,int nElem, int livello, int col, params *input){
+KDTREE* buildTree(float* dataset,int nElem, int livello, int col, params *input){
     if( nElem == 0) return NULL;
     int c= livello%col;
     int indicePunto= cercaMediano(dataset,nElem, c,col,input);
 
     //float** dueDataset= creaDataset( input, dataset, nElem, col, c , indicePunto);
-    
-    float* datasetMagg = creaDatasetMaggiore(input,dataset,nElem,col,c,indicePunto);
-    float* datasetMin = creaDatasetMinore(input,dataset,nElem,col,c,indicePunto);
-    printf("%p \n",datasetMagg);
+    int dimMin=0, dimMagg=0;
+    calcolaDimDataset(dataset, nElem, col, c, indicePunto, &dimMin, &dimMagg);
 
-    stampaMatrice(datasetMagg, nElem/2, col);
+    printf("%d -> dimMin=%d \t dimMagg=%d\n",c,dimMin,dimMagg);
+
+    float* datasetMagg = creaDatasetMaggiore(input,dataset,nElem, dimMagg, col,c,indicePunto);
+    float* datasetMin = creaDatasetMinore(input,dataset,nElem, dimMin, col,c,indicePunto);
+    //printf("%p \n",datasetMagg);
+    //printf("\n %d: %.2f %.2f \n", indicePunto, dataset[indicePunto*col], dataset[indicePunto*col +1]);
+
+    //stampaMatrice(datasetMin, dimMin, col);
 
 
-    struct KDTREET curr;
-    curr.indP=indicePunto;
-    curr.P= dataset[indicePunto*col+c];   
-    curr.figlioSx = buildTree(datasetMin, nElem/2, livello+1, col, input);
-    curr.figlioDx = buildTree(datasetMagg, nElem/2, livello+1, col, input);
+    KDTREE *curr = (KDTREE *) malloc (sizeof(KDTREE));
+    curr->indP=indicePunto;
+    curr->P= dataset[indicePunto*col+c];   
+    curr->figlioSx = buildTree(datasetMin, dimMin, livello+1, col, input);
+    curr->figlioDx = buildTree(datasetMagg, dimMagg, livello+1, col, input);
 
-    printf("%d \n", curr.figlioSx->indP);
+  //  printf("%d \n", curr.figlioSx->indP);
 
-    struct KDTREET* k= &curr;
+    //KDTREE* k= &curr;
 
-    return k;
+    return curr;
 }
 
 void kdtree(params* input) {
@@ -638,6 +649,8 @@ void kdtree(params* input) {
     // -------------------------------------------------
     // Codificare qui l'algoritmo di costruzione
     // -------------------------------------------------
+
+    //stampaMatrice(input->U, input->n, input->h);
 
     if(input->h > 0){
         input->kdtreeRoot= buildTree(input->U, input->n, 0, input->h, input);
@@ -693,9 +706,9 @@ float distance( int indQ, int indP, params* input) {
 }
 
 
-void ricercaRange(float* dataSet, float* querySet, int nColonne, struct KDTREET *n, int indQ, params* input){
+void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int indQ, params* input){
 
-    if( distance(indQ, n->indP, input) > input->r) return 0;
+    if( distance(indQ, n->indP, input) > input->r) return;
 
     int i;
 
@@ -889,9 +902,9 @@ int main(int argc, char** argv) {
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************
-    input->n = 80;
-    input->k = 3;
-    input->nq = 20;
+//    input->n = 80;
+//    input->k = 3;
+//    input->nq = 20;
 
     if(input->h < 0){
         printf("Invalid value of PCA parameter h!\n");
@@ -911,7 +924,7 @@ int main(int argc, char** argv) {
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************       
-        k=3;
+        //k=3;
         if(input->k != k){
             printf("Data set dimensions and query set dimensions are not compatible!\n");
             exit(1);
@@ -1013,6 +1026,8 @@ int main(int argc, char** argv) {
         printf("\nIndexing time = %.3f secs\n", time);
     else
         printf("%.3f\n", time);
+
+
 
     //
     // Range query search
