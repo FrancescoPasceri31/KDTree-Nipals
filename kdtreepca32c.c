@@ -389,45 +389,42 @@ void centraMediaDS(params* input){
 void nipals(params *input){
     float soglia= 1*expf(-8);
     centraMediaDS(input);
+
     int i;
     for(i=0; i<input->n; i++){
         input->u[i]=input->ds[input->k*i]; //ci prendiamo gli elementi della colonna 0
     }
+    
     for(i=0; i<input->h; i++){
-        start_for: 
-        trasponi(input->ds, input->n, input->k, input->dsTras);
-        float t= prodScalare(input->u, input->n, input->u, input->n);
-        prodMatrVett(input->dsTras, input->u, input->k, input->n, input->n, input->v);
-        divisioneVettoreScalare(input->v, t, input->k, input->v);
+        float t,t1;
+        do{
 
-        divisioneVettoreScalare(input->v, calcolaNorma(input->v, input->k), input->k, input->v);
+            trasponi(input->ds, input->n, input->k, input->dsTras);
+            t= prodScalare(input->u, input->n, input->u, input->n);
+        
+            prodMatrVett(input->dsTras, input->u, input->k, input->n, input->n, input->v);
+            divisioneVettoreScalare(input->v, t, input->k, input->v);
+            divisioneVettoreScalare(input->v, calcolaNorma(input->v, input->k), input->k, input->v);
 
-        prodMatrVett(input->ds, input->v, input->n, input->k, input->k, input->u);
-        divisioneVettoreScalare(input->u, prodScalare(input->v, input->k,input->v, input->k), input->n, input->u);
+            prodMatrVett(input->ds, input->v, input->n, input->k, input->k, input->u);
+            divisioneVettoreScalare(input->u, prodScalare(input->v, input->k,input->v, input->k), input->n, input->u);
 
-        float t1= prodScalare(input->u, input->n, input->u, input->n);
+            t1= prodScalare(input->u, input->n, input->u, input->n);
 
-        if( fabsf( t1 - t) >= soglia*t1)
-            goto start_for;
+        }while( fabsf( t1 - t) >= soglia*t1);
+ 
+        int j;
+        for(j=0; j<input->n; j++){
+            input->U[j*input->h+i]=input->u[j];
+        }
+        for(j=0; j<input->k; j++){
+            input->V[j*input->h+i]=input->v[j];
+        }
 
-        else{
-            int j;
-            for(j=0; j<input->n; j++){
-                input->U[j*input->h+i]=input->u[j];
-            }
-            for(j=0; j<input->k; j++){
-                input->V[j*input->h+i]=input->v[j];
-            }
-
-            prodVettori(input->u, input->n, input->v, input->k, input->dsTras);
-            sottrazioneMatrici(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
-            //stampaMatrice(input->ds, input->n, input->k);
-            //scanf("%d",&j);
-            //printf("%d\t",i);
+        prodVettori(input->u, input->n, input->v, input->k, input->dsTras);
+        sottrazioneMatrici(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
         }
     }
-
-}
 
 void pca(params* input) {
     // Codificare qui l'algoritmo PCA
@@ -902,9 +899,9 @@ int main(int argc, char** argv) {
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************
-//    input->n = 80;
-//    input->k = 3;
-//    input->nq = 20;
+    //input->n = 80;
+    //input->k = 3;
+    //input->nq = 20;
 
     if(input->h < 0){
         printf("Invalid value of PCA parameter h!\n");
@@ -973,6 +970,14 @@ int main(int argc, char** argv) {
     
     input-> vetTmp = (int*) malloc(sizeof(int)*input->n);
 
+// DEFINIZIONI MIE
+//float vet[] = {-28.0, -75.0, -140.0, -52.0, -14.0, -33.0, -100.0, -36.0, -9.0, -21.0, -97.0, -27.0,
+//       -3.0, 2.0, -1.0, -15.0, 1.0, 5.0, 10.0, -9.0, 5.0, 23.0, 11.0, -2.0, 27.0, 61.0, 15.0, 12.0,
+//       32.0, 172.0, 27.0, 24.0, 33.0, 340.0, 40.0, 36.0};
+//input->ds = vet;
+//input->n = 9;
+//input->k=4;
+
     //
     // Calcolo PCA
     //
@@ -993,24 +998,20 @@ int main(int argc, char** argv) {
         printf("\nPCA time = %.3f secs\n", time);
     else
         printf("%.3f\n", time);
-    
-    
-//    stampaMatrice(input->U, input->n, input->h);
-//        printf("\n----------------------------------------------------------\n");
-//    stampaMatrice(input->V, input->k, input->h);
 
     //
     // Costruzione K-d-Tree
     //
     
 //AGGIUNTO IO******************************************************************************************
+//stampaMatrice(input->U, input->n, input->h);
+//printf("\n----------------------------------------------------------\n");
+//stampaMatrice(input->V, input->k, input->h);
 //int indP = cercaMediano(input->U, 0, input->h, input);
 //printf("%d , %0.2f\n",indP, input->U[indP*input->h+0]);
-
 //float** punt = creaDataset(input, input->U, input->h, 0, indP);
 //float* d1 = punt[0];    // n/2 * h
 //float* d2 = punt[1];  
-  
 //stampaMatrice(d1,input->n/2,input->h);
 //stampaMatrice(d2,input->n/2,input->h);  
   
