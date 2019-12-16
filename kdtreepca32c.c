@@ -54,6 +54,7 @@ typedef struct KDTREE {
     int Livello;
     struct KDTREE *figlioSx;
     struct KDTREE *figlioDx;
+    float *H;
  }KDTREE;
 
 typedef struct {
@@ -495,7 +496,7 @@ void mergeSort(float* a, int nElem, int p, int r, params* input) {
 }
 
 
-int cercaMediano(float* dataset, int nElem, int dimensioneTaglio, int nCol, params* input){
+int cercaMediano(float* dataset, int nElem, int dimensioneTaglio,  int nCol, float* minEmax, params* input){
     int i;
     float* arr = (float*) malloc(sizeof(float)*nElem);
     for(i=0; i<nElem; i++){
@@ -503,6 +504,9 @@ int cercaMediano(float* dataset, int nElem, int dimensioneTaglio, int nCol, para
         input->vetTmp[i] = i;
     }
     mergeSort(arr, nElem, 0, nElem-1, input);
+    minEmax[0]= arr[0];
+    minEmax[1]= arr[nElem-1];
+
     free(arr);
     
     if(nElem%2!=0){
@@ -612,13 +616,30 @@ void calcolaDimDataset(float* dataset, int nElem, int col, int c, int mediano, i
 KDTREE* buildTree(float* dataset,int nElem, int livello, int col, params *input){
     if( nElem == 0) return NULL;
     int c= livello%col;
-    int indicePunto= cercaMediano(dataset,nElem, c,col,input);
+    int indicePunto;
+    int i,j;
+    KDTREE *curr = (KDTREE *) malloc (sizeof(KDTREE));
+    curr->H = malloc (sizeof(float)* 2*col);
+
+
+    float* minEmax= malloc (sizeof(float)*2); 
+
+    for(i=0; i< col; i++){
+        int med= cercaMediano(dataset, nElem, i, col,minEmax, input);        
+        if( i== c){
+            indicePunto=med;
+        }
+        curr->H[i*2] = minEmax[0];
+        curr->H[i*2+1]= minEmax[1];
+    }
+
+    
 
     //float** dueDataset= creaDataset( input, dataset, nElem, col, c , indicePunto);
     int dimMin=0, dimMagg=0;
     calcolaDimDataset(dataset, nElem, col, c, indicePunto, &dimMin, &dimMagg);
 
-    printf("%d -> dimMin=%d \t dimMagg=%d\n",c,dimMin,dimMagg);
+    //printf("%d -> dimMin=%d \t dimMagg=%d\n",c,dimMin,dimMagg);
 
     float* datasetMagg = creaDatasetMaggiore(input,dataset,nElem, dimMagg, col,c,indicePunto);
     float* datasetMin = creaDatasetMinore(input,dataset,nElem, dimMin, col,c,indicePunto);
@@ -628,7 +649,7 @@ KDTREE* buildTree(float* dataset,int nElem, int livello, int col, params *input)
     //stampaMatrice(datasetMin, dimMin, col);
 
 
-    KDTREE *curr = (KDTREE *) malloc (sizeof(KDTREE));
+
     curr->indP=indicePunto;
     curr->P= dataset[indicePunto*col+c];   
     curr->figlioSx = buildTree(datasetMin, dimMin, livello+1, col, input);
@@ -684,28 +705,28 @@ void kdtree(params* input) {
 * 	===================================================================================================================
 */
 
-float distance( int indQ, int indP, params* input) {
+float distance( float* querySet, int nColonne, int indQ, KDTREE *nodo, params* input) {
     
-    int nColonne = input->h>0? input->h : input->k;
-
     int j;
+    int indP= nodo->indP;
+
     for(j=0; j< nColonne; j++){
         input->Qoint[j]=input->qs[indQ * input->k +j];
-        if(input->qs[indQ*nColonne +j] <= input->H[ indP * nColonne *2 + j*2])
-            input->Point[j]= input->H[ indP * input->k *2 + j*2];
-        else if ( input->qs[indQ*input->k +j] >= input->H[ indP * input->k *2 + j*2 +1])
-            input->Point[j]= input->H[ indP * input->k *2 + j*2 +1];
+        if(input->qs[indQ*nColonne +j] <= nodo->H[ indP * nColonne *2 + j*2])
+            input->Point[j]= nodo->H[ indP * input->k *2 + j*2];
+        else if ( input->qs[indQ*input->k +j] >= nodo->H[ indP * input->k *2 + j*2 +1])
+            input->Point[j]= nodo->H[ indP * input->k *2 + j*2 +1];
         else 
 
             input->Point[j]= input->qs[indQ * input->k +j];        
     }
-    return distanzaEuclidea(input->Point, input->Qoint, input->k);
+    return distanzaEuclidea(input->Point, input->Qoint, nColonne);
 }
 
 
 void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int indQ, params* input){
 
-    if( distance(indQ, n->indP, input) > input->r) return;
+    if( distance(querySet, nColonne, indQ, n, input) > input->r) return;
 
     int i;
 
@@ -713,7 +734,7 @@ void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int 
         input-> Point[i]= dataSet[n->indP*nColonne+ i];
         input-> Qoint[i]= querySet[indQ*nColonne+ i];
     }
-    
+
     if( distanzaEuclidea(input-> Point, input-> Qoint, nColonne) <= input->r ){
         input->QA[input->nQA * 2]=indQ;
         input->QA[input->nQA * 2 +1]=n->indP;
@@ -723,6 +744,7 @@ void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int 
         ricercaRange(dataSet, querySet, nColonne, n->figlioSx, indQ, input);
     }
     if( n->figlioDx != NULL){
+
         ricercaRange(dataSet, querySet, nColonne, n->figlioDx, indQ, input);
     }
 
@@ -743,7 +765,6 @@ void range_query(params* input) {
     if(input->h>0){
         centraMediaQS(input);
         prodMatrici(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
-
     // Calcola il risultato come una matrice di nQA coppie di interi
     // (id_query, id_vicino)
     // o in altro formato
