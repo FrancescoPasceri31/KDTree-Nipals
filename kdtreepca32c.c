@@ -324,9 +324,9 @@ void prodMatrici(float* m1, int nRighe1, int nColonne1, float* m2, int nRighe2, 
             for(j=0; j<nColonne2; j++){
                 sum=0.0;
                 for(l=0; l<nColonne1; l++){
-                    for(z=0; z<nRighe2; z++){
-                        sum += m1[i*nColonne1+l] * m2[z*nColonne2+j];
-                    }
+                    //for(z=0; z<nRighe2; z++){
+                        sum += m1[i*nColonne1+l] * m2[l*nColonne2+j];
+                    //}
                 }
                 risultato[i*nColonne2+j] = sum;
             }
@@ -711,21 +711,26 @@ float distance( float* querySet, int nColonne, int indQ, KDTREE *nodo, params* i
     int indP= nodo->indP;
 
     for(j=0; j< nColonne; j++){
-        input->Qoint[j]=input->qs[indQ * input->k +j];
-        if(input->qs[indQ*nColonne +j] <= nodo->H[ indP * nColonne *2 + j*2])
-            input->Point[j]= nodo->H[ indP * input->k *2 + j*2];
-        else if ( input->qs[indQ*input->k +j] >= nodo->H[ indP * input->k *2 + j*2 +1])
-            input->Point[j]= nodo->H[ indP * input->k *2 + j*2 +1];
+        input->Qoint[j]=querySet[indQ * nColonne +j];
+        
+        if(querySet[indQ*nColonne +j] <= nodo->H[j*2])
+            input->Point[j]= nodo->H[j*2];
+        
+        else if ( querySet[indQ*nColonne +j] >= nodo->H[j*2 +1])
+            input->Point[j]= nodo->H[j*2 +1];
+        
         else 
-
-            input->Point[j]= input->qs[indQ * input->k +j];        
+            input->Point[j]= querySet[indQ * nColonne +j];        
     }
-    return distanzaEuclidea(input->Point, input->Qoint, nColonne);
+    float dist =  distanzaEuclidea(input->Point, input->Qoint, nColonne);
+//printf("DISTANZA PRIMA puntoDS %d - puntoQS %d : %.2f\n",nodo->indP, indQ, dist);
+    return dist;
 }
 
 
 void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int indQ, params* input){
-
+    float dist;
+//printf("DISTANZA DOPO puntoDS %d - puntoQS %d : %.2f\n\n",n->indP, indQ, dist);
     if( distance(querySet, nColonne, indQ, n, input) > input->r) return;
 
     int i;
@@ -734,8 +739,10 @@ void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int 
         input-> Point[i]= dataSet[n->indP*nColonne+ i];
         input-> Qoint[i]= querySet[indQ*nColonne+ i];
     }
-
-    if( distanzaEuclidea(input-> Point, input-> Qoint, nColonne) <= input->r ){
+    dist = distanzaEuclidea(input-> Point, input-> Qoint, nColonne);
+//printf("DISTANZA DOPO puntoDS %d - puntoQS %d : %.2f\n\n",n->indP, indQ, dist);
+    
+    if(  dist <= input->r ){
         input->QA[input->nQA * 2]=indQ;
         input->QA[input->nQA * 2 +1]=n->indP;
         input->nQA+=1;
@@ -764,7 +771,14 @@ void range_query(params* input) {
     // Codificare qui l'algoritmo di ricerca
     if(input->h>0){
         centraMediaQS(input);
+//stampaMatrice(input->qs, input->nq, input->k);
+//scanf("");
+        
         prodMatrici(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
+    
+//stampaMatrice(input->qsRidotto, input->nq, input->h);
+//scanf("");
+
     // Calcola il risultato come una matrice di nQA coppie di interi
     // (id_query, id_vicino)
     // o in altro formato
@@ -920,9 +934,9 @@ int main(int argc, char** argv) {
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************
-    //input->n = 80;
-    //input->k = 3;
-    //input->nq = 20;
+input->n = 80;
+input->k = 3;
+input->nq = 20;
 
     if(input->h < 0){
         printf("Invalid value of PCA parameter h!\n");
@@ -942,7 +956,8 @@ int main(int argc, char** argv) {
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************       
-        //k=3;
+k=3;
+
         if(input->k != k){
             printf("Data set dimensions and query set dimensions are not compatible!\n");
             exit(1);
@@ -983,8 +998,8 @@ int main(int argc, char** argv) {
     input-> u= (float*) malloc(input->n * sizeof(float));
     input-> v= (float*) malloc(input->k* sizeof(float));
     input-> puntoP= (float*) malloc(input->k * sizeof(float));
-    input-> Point= (float*) malloc(sizeof(float)*input->k);
-    input-> Qoint= (float*) malloc(sizeof(float)*input->k);
+    input-> Point= (float*) malloc(sizeof(float)* (input->h>0? input->h : input->k) );
+    input-> Qoint= (float*) malloc(sizeof(float)* (input->h>0? input->h : input->k) );
     input-> vetMediaDS = (float*) malloc(sizeof(float) * input-> k);
     input-> dsTras = (float*) malloc( sizeof(float) * input->n * input-> k );
     input-> qsRidotto = (float*) malloc( sizeof(float) * input->nq * input-> h );
