@@ -49,12 +49,12 @@
 #define	MATRIX		float*
 
 typedef struct KDTREE {
-    int indP;
-    float P;
-    int Livello;
+    //int indP;
+    float *P;
     struct KDTREE *figlioSx;
     struct KDTREE *figlioDx;
     float *H;
+
  }KDTREE;
 
 typedef struct {
@@ -95,7 +95,9 @@ typedef struct {
 
     //STRUTTURE OUTPUT MODIFICABILI
     int* QA; //risposte alle query in forma di coppie di interi (id_query, id_vicino)
+    float** pQA; //punto in posizione nQA associato al punto query in posizione nQA di QA
     int nQA; //numero di risposte alle query
+    int *QAfin;
 } params;
 
 /*
@@ -648,10 +650,8 @@ KDTREE* buildTree(float* dataset,int nElem, int livello, int col, params *input)
 
     //stampaMatrice(datasetMin, dimMin, col);
 
-
-
-    curr->indP=indicePunto;
-    curr->P= dataset[indicePunto*col+c];   
+    //curr->P = malloc (sizeof(float));
+    curr->P = &dataset[indicePunto*col]; 
     curr->figlioSx = buildTree(datasetMin, dimMin, livello+1, col, input);
     curr->figlioDx = buildTree(datasetMagg, dimMagg, livello+1, col, input);
 
@@ -708,7 +708,6 @@ void kdtree(params* input) {
 float distance( float* querySet, int nColonne, int indQ, KDTREE *nodo, params* input) {
     
     int j;
-    int indP= nodo->indP;
 
     for(j=0; j< nColonne; j++){
         input->Qoint[j]=querySet[indQ * nColonne +j];
@@ -732,20 +731,22 @@ void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int 
     float dist;
 //printf("DISTANZA DOPO puntoDS %d - puntoQS %d : %.2f\n\n",n->indP, indQ, dist);
     if( distance(querySet, nColonne, indQ, n, input) > input->r) return;
-
+    printf("Intersezione c'è\n");
     int i;
 
     for(i=0; i<nColonne; i++){
-        input-> Point[i]= dataSet[n->indP*nColonne+ i];
+        //input-> Point[i]= dataSet[n->indP*nColonne+ i];
         input-> Qoint[i]= querySet[indQ*nColonne+ i];
+        printf("Qoint inserito\n");
     }
     dist = distanzaEuclidea(input-> Point, input-> Qoint, nColonne);
 //printf("DISTANZA DOPO puntoDS %d - puntoQS %d : %.2f\n\n",n->indP, indQ, dist);
     
     if(  dist <= input->r ){
-        input->QA[input->nQA * 2]=indQ;
-        input->QA[input->nQA * 2 +1]=n->indP;
+        input->QA[input->nQA]=indQ;
+        input->pQA[input->nQA]= n->P;
         input->nQA+=1;
+        printf("valore inserito\n");
     }
     if( n->figlioSx != NULL){
         ricercaRange(dataSet, querySet, nColonne, n->figlioSx, indQ, input);
@@ -934,9 +935,9 @@ int main(int argc, char** argv) {
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************
-input->n = 80;
-input->k = 3;
-input->nq = 20;
+//input->n = 80;
+//input->k = 3;
+//input->nq = 20;
 
     if(input->h < 0){
         printf("Invalid value of PCA parameter h!\n");
@@ -956,7 +957,7 @@ input->nq = 20;
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************
 // AGGIUNTO IO ****************************************************       
-k=3;
+//k=3;
 
         if(input->k != k){
             printf("Data set dimensions and query set dimensions are not compatible!\n");
@@ -1003,7 +1004,9 @@ k=3;
     input-> vetMediaDS = (float*) malloc(sizeof(float) * input-> k);
     input-> dsTras = (float*) malloc( sizeof(float) * input->n * input-> k );
     input-> qsRidotto = (float*) malloc( sizeof(float) * input->nq * input-> h );
-    
+    input-> QA = (int*) malloc(sizeof(int)* input->nq*input->n);
+    input-> pQA = (float**) malloc(sizeof(float*)* input->nq*input->n);
+
     input-> vetTmp = (int*) malloc(sizeof(int)*input->n);
 
 // DEFINIZIONI MIE
