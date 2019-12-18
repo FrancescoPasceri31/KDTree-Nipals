@@ -518,45 +518,6 @@ int cercaMediano(float* dataset, int nElem, int dimensioneTaglio,  int nCol, flo
     }
 }
 
-//float** creaDataset(params *input, float* dataset ,int nElem, int col, int c, int indP){
-//    int i;
-//    int j1=0,j2=0;
-//    int z;
-//    float **ris = (float **) malloc( 2 * sizeof(float*));
-//    float* dsMinore= (float* ) malloc((nElem/2 * col) *sizeof(float));
-//    float* dsMaggiore= (float* ) malloc((nElem/2 * col) *sizeof(float));    
-//
-//    for(i=0; i<input->n; i++){
-//        if(i!= indP){
-//
-//            if (dataset[i * col +c] <  dataset[indP * col + c]){
-//
-//                for(z=0; z< col; z++){
-//                    dsMinore[j1*col + z] =dataset[i*col +z];
-//                }
-//                j1++;
-//            }
-//            else if (dataset[i * col +c] >=  dataset[indP * col + c]){
-//                for(z=0; z< col; z++){
-//                    dsMaggiore[j2*col + z] =dataset[i*col +z];
-//                }
-//                j2++;
-//            }
-//        }
-//        else if( input-> n%2==0){
-//               for(z=0; z< col; z++){
-//                    dsMinore[j1*col + z] =dataset[i*col +z];
-//                }
-//                j1++;
-//        }
-//    }
-//
-//    ris[0]= dsMinore;
-//    ris[1]= dsMaggiore;
-//
-//    return ris;
-//}
-
 
 float* creaDatasetMaggiore(params* input, float* dataset, int nElem, int nDim, int col, int c, int indP){
     int i;
@@ -576,9 +537,7 @@ float* creaDatasetMaggiore(params* input, float* dataset, int nElem, int nDim, i
             }
         }
     }
-    //printf("%p",&dsMaggiore);
-    return dsMaggiore;
-    
+    return dsMaggiore;    
 }
 
 
@@ -616,6 +575,7 @@ void calcolaDimDataset(float* dataset, int nElem, int col, int c, int mediano, i
 }
     
 KDTREE* buildTree(float* dataset,int nElem, int livello, int col, params *input){
+
     if( nElem == 0) return NULL;
     int c= livello%col;
     int indicePunto;
@@ -635,23 +595,16 @@ KDTREE* buildTree(float* dataset,int nElem, int livello, int col, params *input)
         curr->H[i*2+1]= minEmax[1];
     }
 
-    
-
-    //float** dueDataset= creaDataset( input, dataset, nElem, col, c , indicePunto);
     int dimMin=0, dimMagg=0;
     calcolaDimDataset(dataset, nElem, col, c, indicePunto, &dimMin, &dimMagg);
 
-    //printf("%d -> dimMin=%d \t dimMagg=%d\n",c,dimMin,dimMagg);
-
     float* datasetMagg = creaDatasetMaggiore(input,dataset,nElem, dimMagg, col,c,indicePunto);
     float* datasetMin = creaDatasetMinore(input,dataset,nElem, dimMin, col,c,indicePunto);
-    //printf("%p \n",datasetMagg);
-    //printf("\n %d: %.2f %.2f \n", indicePunto, dataset[indicePunto*col], dataset[indicePunto*col +1]);
 
-    //stampaMatrice(datasetMin, dimMin, col);
+    curr->P = malloc(sizeof(float)); 
+    curr->P = &dataset[indicePunto*col];
 
-    //curr->P = malloc (sizeof(float));
-    curr->P = &dataset[indicePunto*col]; 
+
     curr->figlioSx = buildTree(datasetMin, dimMin, livello+1, col, input);
     curr->figlioDx = buildTree(datasetMagg, dimMagg, livello+1, col, input);
 
@@ -676,22 +629,6 @@ void kdtree(params* input) {
         input->kdtreeRoot= buildTree(input->ds, input->n, 0, input->k, input);
     }
     
-   /* KDTREET** p = malloc(sizeof(KDTREET*) * input->n);
-    int pos=0;
-    p[pos] = input->kdtreeRoot;
-    int i;
-    for(i=0; i<input->n; i++){
-        printf("%d", p[i]->indP);
-        if( p[i]->figlioSx != NULL ){
-            pos += 1;
-            p[pos] = p[i]->figlioSx;
-        }
-        if( p[i]->figlioDx != NULL ){
-            pos += 1;
-            p[pos] = p[i]->figlioDx;
-        }
-    }
-    scanf(">%d",&i);*/
 }
 
 
@@ -730,32 +667,42 @@ float distance( float* querySet, int nColonne, int indQ, KDTREE *nodo, params* i
 void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int indQ, params* input){
     float dist;
 //printf("DISTANZA DOPO puntoDS %d - puntoQS %d : %.2f\n\n",n->indP, indQ, dist);
-    if( distance(querySet, nColonne, indQ, n, input) > input->r) return;
-    printf("Intersezione c'è\n");
-    int i;
+    if( distance(querySet, nColonne, indQ, n, input) > input->r){
+        ;
+        //printf("indQ (%d) no inters.\n",indQ);
+        //input->pQA[input->nQA*nColonne] = 'e';
+    }else{
+        //printf("Intersezione c'è\n");
+        int i;
 
-    for(i=0; i<nColonne; i++){
-        //input-> Point[i]= dataSet[n->indP*nColonne+ i];
-        input-> Qoint[i]= querySet[indQ*nColonne+ i];
-        printf("Qoint inserito\n");
-    }
-    dist = distanzaEuclidea(input-> Point, input-> Qoint, nColonne);
-//printf("DISTANZA DOPO puntoDS %d - puntoQS %d : %.2f\n\n",n->indP, indQ, dist);
-    
-    if(  dist <= input->r ){
-        input->QA[input->nQA]=indQ;
-        input->pQA[input->nQA]= n->P;
-        input->nQA+=1;
-        printf("valore inserito\n");
-    }
-    if( n->figlioSx != NULL){
-        ricercaRange(dataSet, querySet, nColonne, n->figlioSx, indQ, input);
-    }
-    if( n->figlioDx != NULL){
+        for(i=0; i<nColonne; i++){
+            //input-> Point[i]= dataSet[n->indP*nColonne+ i];
+            input-> Qoint[i]= querySet[indQ*nColonne+ i];
+            //printf("Qoint inserito\n");
+        }
 
-        ricercaRange(dataSet, querySet, nColonne, n->figlioDx, indQ, input);
-    }
 
+        dist = distanzaEuclidea(n->P, input-> Qoint, nColonne);
+        //printf("DISTANZA DOPO puntoDS %d - puntoQS %d : %.2f\n\n",n->indP, indQ, dist);
+
+        if(  dist <= input->r ){
+           // printf("indQ (%d) c'è inters.\n", indQ);
+            
+            input->QA[input->nQA]=indQ;
+            
+            input->pQA[input->nQA] = n->P;
+            
+            input->nQA+=1;
+            //printf("valore inserito\n");
+        }
+        if( n->figlioSx != NULL){
+            ricercaRange(dataSet, querySet, nColonne, n->figlioSx, indQ, input);
+        }
+        if( n->figlioDx != NULL){
+
+            ricercaRange(dataSet, querySet, nColonne, n->figlioDx, indQ, input);
+        }
+    }
 }
 
 void centraMediaQS(params* input){
@@ -772,13 +719,10 @@ void range_query(params* input) {
     // Codificare qui l'algoritmo di ricerca
     if(input->h>0){
         centraMediaQS(input);
-//stampaMatrice(input->qs, input->nq, input->k);
-//scanf("");
+
         
         prodMatrici(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
     
-//stampaMatrice(input->qsRidotto, input->nq, input->h);
-//scanf("");
 
     // Calcola il risultato come una matrice di nQA coppie di interi
     // (id_query, id_vicino)
@@ -797,28 +741,6 @@ void range_query(params* input) {
     }
 }
 
-
-
-// 0 Hmin , 1 Hmax, nP numerorigaPunto==(indiceDataset), 
-float distanza(float* Q, int dimen, int nP, params* input){
-    int j;
-    
-
-    for(j=0; j<dimen; j++){
-        if(Q[j]<= input-> H[nP*(2*dimen)+j+0]){ // prendo min della coordinata della regione
-            input->puntoP[j]= input-> H[nP*(2*dimen)+j+0];
-        }
-
-        else if (Q[j]>= input-> H[nP*(2*dimen)+j+1]){
-            input->puntoP[j]= input-> H[nP*(2*dimen)+j+1];
-        }
-        else
-        {
-            input->puntoP[j]=Q[j];
-        }         
-    }
-    return distanzaEuclidea(input->puntoP, Q, dimen);
-}
 
 //******************************************************************************************************************
 //******************************************************************************************************************
@@ -929,16 +851,6 @@ int main(int argc, char** argv) {
     sprintf(fname, "%s.ds", input->filename);
     input->ds = load_data(fname, &input->n, &input->k);
 
-
-// AGGIUNTO IO ****************************************************
-// AGGIUNTO IO ****************************************************
-// AGGIUNTO IO ****************************************************
-// AGGIUNTO IO ****************************************************
-// AGGIUNTO IO ****************************************************
-//input->n = 80;
-//input->k = 3;
-//input->nq = 20;
-
     if(input->h < 0){
         printf("Invalid value of PCA parameter h!\n");
         exit(1);
@@ -952,19 +864,12 @@ int main(int argc, char** argv) {
         sprintf(fname, "%s.qs", input->filename);
         int k;
         input->qs = load_data(fname, &input->nq, &k);
-// AGGIUNTO IO ****************************************************
-// AGGIUNTO IO ****************************************************
-// AGGIUNTO IO ****************************************************
-// AGGIUNTO IO ****************************************************
-// AGGIUNTO IO ****************************************************       
-//k=3;
-
+     
         if(input->k != k){
             printf("Data set dimensions and query set dimensions are not compatible!\n");
             exit(1);
         }
-    }
-    
+    }  
     //
     // Visualizza il valore dei parametri
     //
@@ -992,6 +897,15 @@ int main(int argc, char** argv) {
         }
     }
 
+
+//    input->n=30;
+//    input->k=3;
+//    input->nq=30;
+//
+//stampaMatrice(input->qs, input->nq, input->k);
+//printf("\n--------------\n");
+//stampaMatrice(input->ds, input->n, input->k);
+
     //allocazione strutture dati
     input-> H= (float*) malloc(input->n*input->k*2 * sizeof(float));
     input-> U= (float*) malloc(input->n*input->h * sizeof(float));
@@ -1007,15 +921,11 @@ int main(int argc, char** argv) {
     input-> QA = (int*) malloc(sizeof(int)* input->nq*input->n);
     input-> pQA = (float**) malloc(sizeof(float*)* input->nq*input->n);
 
-    input-> vetTmp = (int*) malloc(sizeof(int)*input->n);
+    for(i=0; i<input->nq*input->n; i++){
+        input->pQA[i] = (float*) malloc(sizeof(float));
+    }
 
-// DEFINIZIONI MIE
-//float vet[] = {-28.0, -75.0, -140.0, -52.0, -14.0, -33.0, -100.0, -36.0, -9.0, -21.0, -97.0, -27.0,
-//       -3.0, 2.0, -1.0, -15.0, 1.0, 5.0, 10.0, -9.0, 5.0, 23.0, 11.0, -2.0, 27.0, 61.0, 15.0, 12.0,
-//       32.0, 172.0, 27.0, 24.0, 33.0, 340.0, 40.0, 36.0};
-//input->ds = vet;
-//input->n = 9;
-//input->k=4;
+    input-> vetTmp = (int*) malloc(sizeof(int)*input->n);
 
     //
     // Calcolo PCA
@@ -1089,17 +999,117 @@ int main(int argc, char** argv) {
     // Salva il risultato delle query
     // da modificare se si modifica il formato delle matrici di output
     //
-    
+
+    int z;
+  
+    float* dataS; float* queryS;
+    int nCol;
+    if(input->h>0){
+         nCol = input->h;
+         dataS = (float*) malloc(sizeof(float)* input->n * nCol );
+         dataS = input->U;
+         queryS = (float*) malloc(sizeof(float)* input->nq * nCol);
+         queryS = input->qsRidotto;
+    }else{
+         nCol = input->k;
+         dataS = (float*) malloc(sizeof(float)* input->n * nCol );
+         dataS = input->ds;
+         queryS = (float*) malloc(sizeof(float)* input->nq * nCol);
+         queryS = input->qs;
+    }
+
+//    for(i=0; i<input->nQA; i++){
+//        printf("indice query: %d -> \t ", input->QA[i]);
+//        for(j=0; j<nCol; j++){
+//            printf("%.2f ", queryS[input->QA[i]*nCol+j] );
+//        }
+//        printf(" --  ");
+//        for(j=0; j<nCol; j++){
+//            printf( "%.2f ", input->pQA[i][j] );
+//        }
+//        printf("\n");
+//    }
+
+    int* queryAnswer = (int*)malloc(sizeof(int)*input->nQA);
+    for(i=0; i<input->nQA; i++){
+        queryAnswer[i]=-1;
+    }
+    int booleanUguali;
+    for(i=0; i<input->nQA; i++){
+        for(j=0; j<input->n; j++){
+            booleanUguali=0;
+            if( input->pQA[i][0] == dataS[j*nCol+0] ){
+                booleanUguali=1;
+                for(z=1; z<nCol && booleanUguali==1; z++){
+                    if( input->pQA[i][z] != dataS[j*nCol+z] ){
+                        booleanUguali=0;
+                    }
+                }
+                if(booleanUguali==1){
+                    queryAnswer[i] = j;
+                }
+            }
+        }
+    }
+
+    int indQ;
+
+    printf("\n============================================\n");
+
+    int boolean = 0;
+//    for(i=0; i<input->nq; i++){
+//        j=0;
+//        boolean = 0;
+//        while(j<input->nQA && boolean==0 ){
+//            if(i == input->QA[j] ){
+//                boolean=1;
+//            }
+//            j+=1;
+//        }
+//        if(boolean==0){
+//            printf("query %d: [ ]\n", i);
+//        }else{
+//            printf("query %d: *[ ", i);
+//            j=0;
+//            while( j<input->nQA){
+//                if( i == input->QA[j] ){
+//                    printf("%d ", queryAnswer[j]);
+//                }
+//                j+=1;
+//            }
+//            printf("]\n");        
+//        }
+//    }
+
     if(input->r >= 0){
         if(!input->silent && input->display) {
             //NB: il codice non assume che QA sia ordinata per query, in caso lo sia ottimizzare il codice
             printf("\nQuery Answer:\n");
             for(i = 0; i < input->nq; i++){
-                printf("query %d: [ ", i);
-                for(j = 0; j < input->nQA; j++)
-                    if(input->QA[j*2] == i)
-                        printf("%d ", input->QA[j*2+1]);
-                printf("]\n");
+                
+            j=0;
+        boolean = 0;
+        while(j<input->nQA && boolean==0 ){
+            if(i == input->QA[j] ){
+                boolean=1;
+            }
+            j+=1;
+        }
+        if(boolean==0){
+            printf("query %d: [ ]\n", i);
+        }else{
+            printf("query %d: [ ", i);
+            j=0;
+            while( j<input->nQA){
+                if( i == input->QA[j] ){
+                    printf("%d ", queryAnswer[j]);
+                }
+                j+=1;
+            }
+            printf("]\n");        
+        }
+
+
             }
             printf("\n");
         }
