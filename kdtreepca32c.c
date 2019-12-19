@@ -283,25 +283,23 @@ void prodMatrVett(float* m, float* v, int nRighe, int nColonne, int lengthVettor
     }
 }
 
-float prodScalare(float* v1, int dim1, float* v2, int dim2){
+void prodScalare(float* v1, int dim1, float* v2, int dim2, float *r){
     int i;
-    float r=0.0;
+    *r=0.0;
 
     if(dim1=dim2){
         for(i=0; i<dim1; i++)
-            r+= v1[i]*v2[i];
-    
-    return r;
+            *r+= v1[i]*v2[i];     
     }    
 }
 
-float calcolaNorma( float* v, int dim){
-    float r=0;
+void calcolaNorma( float* v, int dim, float *r){
+    *r=0;
     int i;
     for(i=0; i<dim;i++){
-        r+= powf(v[i],2.0);
+        *r+= powf(v[i],2.0);
     }
-    return sqrtf(r);
+    *r=sqrtf(*r);
 }
 
 void sottrazioneMatrici(float* m1, float* m2, int nRighe1, int nColonne1, int nRighe2, int nColonne2, float* risultato){
@@ -354,14 +352,14 @@ void divisioneVettoreScalare(float* v, float s, int dim, float* risultato){
     }
 }
 
-float distanzaEuclidea(float* P,float* Q, int dimen){
+void distanzaEuclidea(float* P,float* Q, int dimen, float* dist){
     int i;
-    float dist=0;
+    *dist=0;
 
     for(i=0; i<dimen; i++){
-        dist+= powf(P[i]-Q[i],2);    
+        *dist+= powf(P[i]-Q[i],2);    
     }
-    return sqrtf(dist);
+    *dist=sqrtf(*dist);
 
 }
 
@@ -400,19 +398,24 @@ void nipals(params *input){
     
     for(i=0; i<input->h; i++){
         float t,t1;
+        float r;
         do{
 
             trasponi(input->ds, input->n, input->k, input->dsTras);
-            t= prodScalare(input->u, input->n, input->u, input->n);
+            prodScalare(input->u, input->n, input->u, input->n, &t);
         
             prodMatrVett(input->dsTras, input->u, input->k, input->n, input->n, input->v);
             divisioneVettoreScalare(input->v, t, input->k, input->v);
-            divisioneVettoreScalare(input->v, calcolaNorma(input->v, input->k), input->k, input->v);
+            
+            calcolaNorma(input->v, input->k, &r);
+            divisioneVettoreScalare(input->v, r, input->k, input->v);
 
             prodMatrVett(input->ds, input->v, input->n, input->k, input->k, input->u);
-            divisioneVettoreScalare(input->u, prodScalare(input->v, input->k,input->v, input->k), input->n, input->u);
 
-            t1= prodScalare(input->u, input->n, input->u, input->n);
+            prodScalare(input->v, input->k,input->v, input->k, &r);
+            divisioneVettoreScalare(input->u, r, input->n, input->u);
+
+            prodScalare(input->u, input->n, input->u, input->n, &t1);
 
         }while( fabsf( t1 - t) >= soglia*t1);
  
@@ -642,7 +645,7 @@ void kdtree(params* input) {
 * 	===================================================================================================================
 */
 
-float distance( float* querySet, int nColonne, int indQ, KDTREE *nodo, params* input) {
+void distance( float* querySet, int nColonne, int indQ, KDTREE *nodo, params* input, float* dist) {
     
     int j;
 
@@ -658,16 +661,16 @@ float distance( float* querySet, int nColonne, int indQ, KDTREE *nodo, params* i
         else 
             input->Point[j]= querySet[indQ * nColonne +j];        
     }
-    float dist =  distanzaEuclidea(input->Point, input->Qoint, nColonne);
+    distanzaEuclidea(input->Point, input->Qoint, nColonne, dist);
 //printf("DISTANZA PRIMA puntoDS %d - puntoQS %d : %.2f\n",nodo->indP, indQ, dist);
-    return dist;
 }
 
 
 void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int indQ, params* input){
     float dist;
 //printf("DISTANZA DOPO puntoDS %d - puntoQS %d : %.2f\n\n",n->indP, indQ, dist);
-    if( distance(querySet, nColonne, indQ, n, input) > input->r){
+    distance(querySet, nColonne, indQ, n, input, &dist);
+    if( dist > input->r){
         ;
         //printf("indQ (%d) no inters.\n",indQ);
         //input->pQA[input->nQA*nColonne] = 'e';
@@ -682,7 +685,7 @@ void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int 
         }
 
 
-        dist = distanzaEuclidea(n->P, input-> Qoint, nColonne);
+        distanzaEuclidea(n->P, input-> Qoint, nColonne, &dist);
         //printf("DISTANZA DOPO puntoDS %d - puntoQS %d : %.2f\n\n",n->indP, indQ, dist);
 
         if(  dist <= input->r ){
