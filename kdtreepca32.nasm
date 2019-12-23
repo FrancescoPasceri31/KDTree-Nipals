@@ -87,6 +87,8 @@ extern free_block
 
 global prova
 
+global calcolaNorma
+
 input		equ		8
 
 prova:
@@ -119,6 +121,74 @@ prova:
 
 		pop	edi									; ripristina i registri da preservare
 		pop	esi
+		pop	ebx
+		mov	esp, ebp							; ripristina lo Stack Pointer
+		pop	ebp									; ripristina il Base Pointer
+		ret										; torna alla funzione C chiamante
+
+
+calcolaNorma:
+		; ------------------------------------------------------------
+		; Sequenza di ingresso nella funzione
+		; ------------------------------------------------------------
+		push		ebp							; salva il Base Pointer
+		mov			ebp, esp					; il Base Pointer punta al Record di Attivazione corrente
+		push		ebx							; salva i registri da preservare
+		push 		eax
+		push		ecx
+		push		edx
+		push		esi
+		push		edi
+		; ------------------------------------------------------------
+		; legge i parametri dal Record di Attivazione corrente
+		; ------------------------------------------------------------
+
+		; elaborazione
+		mov	eax, [ebp+8] ;v
+		mov ebx, [ebp+12] ;dim
+		;mov ecx, [ebp+16]
+
+		xor esi, esi
+		xor edx, edx
+ciclo:
+		div ebx,4
+		mov esi,[ebx]
+		xor edi,edi
+		cmp edi, esi
+		jge fine_ciclo
+		mov xmm0,[eax+4*edi]
+		
+		.. ;problema.
+		add edi,1
+fine_ciclo:
+		mul esi,4				; indice da cui partire (esi=16)
+		mov edi, [ebx]
+		sub edi,esi				; 19 -16 =3 
+ciclo_2:
+		cmp edi,0
+		je fine_tutto
+		mov ecx,[eax+esi]		;elementi
+		mul ecx, ecx
+		add edx, ecx			;somma += elementoi
+		add esi,1
+		sub edi,1
+		jmp ciclo_2
+		
+		
+
+
+		
+
+fine_tutto:
+		; ------------------------------------------------------------
+		; Sequenza di uscita dalla funzione
+		; ------------------------------------------------------------
+
+		pop	edi									; ripristina i registri da preservare
+		pop	esi
+		pop edx
+		pop ecx
+		pop eax
 		pop	ebx
 		mov	esp, ebp							; ripristina lo Stack Pointer
 		pop	ebp									; ripristina il Base Pointer
