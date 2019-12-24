@@ -158,7 +158,7 @@ ciclo:
 		jge fine_ciclo
 		mov xmm0,[eax+4*edi]
 		
-		.. ;problema.
+		.. ;problema?
 		add edi,1
 fine_ciclo:
 		mul esi,4				; indice da cui partire (esi=16)
@@ -173,9 +173,6 @@ ciclo_2:
 		add esi,1
 		sub edi,1
 		jmp ciclo_2
-		
-		
-
 
 		
 
@@ -193,3 +190,56 @@ fine_tutto:
 		mov	esp, ebp							; ripristina lo Stack Pointer
 		pop	ebp									; ripristina il Base Pointer
 		ret										; torna alla funzione C chiamante
+
+
+
+		/*
+		*********************************
+		MIA VERSIONE		
+		+++++++++++++++++++++++++++++++++
+		*/
+
+				; elaborazione
+		mov	eax, [ebp+8] ;v
+		mov ebx, [ebp+12] ;dim
+		;mov ecx, [ebp+16]
+
+	
+		xor esi,esi
+		xor xmm1,xmm1 ;risultato
+		mov ecx, [ebx]
+		sub ecx, 4
+	ciclo:	
+		cmp esi, ecx
+		jg ciclo_resto
+		movups xmm0, [eax+4*esi] ; ne dovrei prendere 4 insieme
+		mulps xmm0,xmm0
+		haddps xmm0,xmm0
+		haddps xmm0,xmm0 ; in ogni 32 abbiamo uguale risultato dei 4
+		addps xmm1, xmm0
+		add esi, 4
+		jmp ciclo
+
+	ciclo_resto:
+		cmp esi, [ebx]
+		jge fine_tutto
+		movss xmm0,[eax+4*esi]
+		mulss xmm0, xmm0
+		addps xmm1,xmm0
+		inc esi
+		jmp ciclo_resto	
+
+fine_tutto:
+		; ------------------------------------------------------------
+		; Sequenza di uscita dalla funzione
+		; ------------------------------------------------------------
+
+		pop	edi									; ripristina i registri da preservare
+		pop	esi
+		pop edx
+		pop ecx
+		pop eax
+		pop	ebx
+		mov	esp, ebp							; ripristina lo Stack Pointer
+		pop	ebp									; ripristina il Base Pointer
+		ret	
