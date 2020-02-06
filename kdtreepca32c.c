@@ -212,7 +212,7 @@ void save_data(char* filename, void* X, int n, int k) {
 
 // PROCEDURE ASSEMBLY
 extern void prova(params* input);
-
+extern void tess(int* arr, int length, float norma);
 
 
 /*
@@ -929,6 +929,21 @@ int main(int argc, char** argv) {
     }
 
     input-> vetTmp = (int*) malloc(sizeof(int)*input->n);
+
+
+
+printf("\nCHIAMATA PROCEDURA ASS\n");
+    int length=12;
+    int* arrayss = (int*) malloc(sizeof(int)*length);
+    for(int i=0; i<length; i+=1){
+        arrayss[i] = 1;
+    }
+    float norma;
+    tess(arrayss, length, norma);
+    printf("=====> %.2f\n",norma);
+printf("FINE PROCEDURA.\n");
+
+
 
     //
     // Calcolo PCA
