@@ -33,7 +33,11 @@
 section .data			; Sezione contenente dati inizializzati
 
 uno:		dd		1.0
-stringa: db 0,'Stampa',0
+esad: db 'valore: %x',10,0
+intero: db 'valore: %d',10,0
+duevalori: db '%d %d',10,0
+trevalori: db '%d %d %x',10,0
+stampaXMM: db '%x %x %x %x',10,0
 quattro: dd 4
 ;
 ;align 16
@@ -44,6 +48,7 @@ section .bss			; Sezione contenente dati non inizializzati
 ;alignb 16
 ;vec2:		resq	4
 tmp: resd 1
+count: resd 1
 
 section .text			; Sezione contenente il codice macchina
 
@@ -69,7 +74,8 @@ section .text			; Sezione contenente il codice macchina
 extern get_block
 extern free_block
 extern printf
-
+extern getchar
+extern scanf
 
 %macro	getmem	2
 	mov	eax, %1
@@ -136,71 +142,6 @@ prova:
 
 
 calcolaNorma_ass:
-		; ------------------------------------------------------------
-		; Sequenza di ingresso nella funzione
-		; ------------------------------------------------------------
-		push		ebp							; salva il Base Pointer
-		mov			ebp, esp					; il Base Pointer punta al Record di Attivazione corrente
-		push		ebx							; salva i registri da preservare
-		push 		eax
-		push		ecx
-		push		edx
-		push		esi
-		push		edi
-		; ------------------------------------------------------------
-		; legge i parametri dal Record di Attivazione corrente
-		; ------------------------------------------------------------
-
-		; elaborazione
-		mov	eax, [ebp+8] ;v
-		mov ebx, [ebp+12] ;dim
-		;mov ecx, [ebp+16]
-
-		xor esi, esi
-		xor edx, edx
-ciclo_1:
-;;		div ebx,4
-		mov esi,[ebx]
-		xor edi,edi
-		cmp edi, esi
-		jge fine_ciclo
-;;		mov xmm0,[eax+4*edi]
-		
-		;problema?
-		add edi,1
-fine_ciclo:
-;;		mul esi,4				; indice da cui partire (esi=16)
-		mov edi, [ebx]
-		sub edi,esi				; 19 -16 =3 
-ciclo_2:
-		cmp edi,0
-		je fine_tutto_pt1
-		mov ecx,[eax+esi]		;elementi
-;;		mul ecx, ecx
-		add edx, ecx			;somma += elementoi
-		add esi,1
-		sub edi,1
-		jmp ciclo_2
-
-		
-
-fine_tutto_pt1:
-		; ------------------------------------------------------------
-		; Sequenza di uscita dalla funzione
-		; ------------------------------------------------------------
-
-		pop	edi									; ripristina i registri da preservare
-		pop	esi
-		pop edx
-		pop ecx
-		pop eax
-		pop	ebx
-		mov	esp, ebp							; ripristina lo Stack Pointer
-		pop	ebp									; ripristina il Base Pointer
-		ret										; torna alla funzione C chiamante
-
-
-tess:
 	; ------------------------------------------------------------
 	; Sequenza di ingresso nella funzione
 	; ------------------------------------------------------------
@@ -213,68 +154,76 @@ tess:
 	; legge i parametri dal Record di Attivazione corrente
 	; ------------------------------------------------------------
 
-push stringa
-call printf
-pop ecx
-
-
-	mov eax, [ebp+8] ; prendo punt array
-	mov edi, [ebp+12] ; prendo length in edi
-	; ho la norma in [ebp+16]
+	; 8 puntatore, 12 la length, 16 puntatore alla norma
 
 	; per calcolare la norma devo fare loop unrolling quoziente su un registro xmm per length/4 volte
 	; e successivamente per la differenza devo eseguire un loop resto
 
-	movss xmm0, [ebp+12]
-	shufps xmm0,xmm0,0
-	movss xmm1, [quattro]
-	shufps xmm1,xmm1,0
-	divps xmm0,xmm1	; metto in xmm0 la divisione length/4 
-	movss [tmp], xmm0 ; salvo in edi la length del vettore / 4
-	mov edi, [tmp]
-	xorps xmm0,xmm0
-	xorps xmm1,xmm1
+	mov ecx, [ebp+16] ; prendo il puntatore alla norma
+
+	mov edx,0
+	mov eax,[ebp+12]
+	div dword[quattro]
+	mov edi,eax
 
 	xor esi, esi
 	ciclo_quoz:
 		cmp esi, edi
-		je ciclo_resto
-		movups xmm0, [eax+4*esi]
-		movss [tmp],xmm0
+		je continua
+		mov ebx,[ebp+8] ; prendo il puntatore all'array
+		mov edx,0
+		mov eax, 16 ; moltiplico esi per 16 in maniera tale da saltare 4 elementi
+		mul esi
+		movups xmm0, [ebx+eax] ; prendo 4 elementi
 		mulps xmm0,xmm0
-		haddps xmm0,xmm0
-		haddps xmm0,xmm0
-		xorps xmm1,xmm1
-		movss xmm1, [ebp+16]
-		addss xmm1,xmm0
-		movss [ebp+16],xmm1
+		haddps xmm0,xmm0 ; sommo pos 0 e 1 di xmm
+		haddps xmm0,xmm0 ; stessa cosa
+		xorps xmm1,xmm1 ; azzero xmm1
+		movss xmm1, [ecx] ; inserisco in xmm1 la norma
+		addss xmm1,xmm0 ; sommo norma a quello calcolato prima
+		movss [ecx],xmm1 ; la rimetto in memoria
 		add esi,1
 		jmp ciclo_quoz
 
+	continua:
+		mov edx,0
+		mov eax,esi
+		mul dword[quattro]
+		mov esi,eax
+		mov edi, [ebp+12]
 
-	xor esi,esi
-	mov [tmp],edi
-	movss xmm0,[tmp]
-	mulss xmm0,[quattro]	; moltiplico il numero di cicli precedenti * 4 in maniera tale da trovare la posizione dove riempire
-	movss [tmp],xmm0	; cella da riempire
-	mov esi, [tmp]
-	xor edi,edi
-	mov edi, [ebp+12]	; carico in edi la length del vettore ed eseguo length-cella dove sono
+		cmp esi,edi
+		je fine_calcolaNorma_ass
+
 	ciclo_resto:
 		cmp esi,edi
-		je fine_tess
-		mov edx, [eax+4*esi]
-		mov [tmp],edx
-		movss xmm0,[tmp]
+		je fine_calcolaNorma_ass
+		mov ebx,[ebp+8]
+		movss xmm0,[ebx+4*esi]
 		mulss xmm0,xmm0
 		xorps xmm1,xmm1
-		movss xmm1, [ebp+16]
+		movss xmm1, [ecx]
 		addss xmm1, xmm0
-		movss [ebp+16],xmm1
+		movss [ecx],xmm1
 		add esi,1
 		jmp ciclo_resto
 
-	fine_tess:
+
+	fine_calcolaNorma_ass:
+	movss xmm0, [ecx]
+	sqrtss xmm0,xmm0
+	movss [ecx],xmm0
+
+	;mov edx,[ecx]
+	;push edx
+	;push esad
+	;call printf
+	;pop edx
+	;pop edx
+	;pushad
+	;call getchar
+	;popad
+
 	; ------------------------------------------------------------
 	; Sequenza di uscita dalla funzione
 	; ------------------------------------------------------------

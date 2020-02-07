@@ -212,7 +212,7 @@ void save_data(char* filename, void* X, int n, int k) {
 
 // PROCEDURE ASSEMBLY
 extern void prova(params* input);
-extern void tess(int* arr, int length, float norma);
+extern void calcolaNorma_ass(float* arr, int length, float* norma);
 
 
 /*
@@ -933,14 +933,22 @@ int main(int argc, char** argv) {
 
 
 printf("\nCHIAMATA PROCEDURA ASS\n");
-    int length=12;
-    int* arrayss = (int*) malloc(sizeof(int)*length);
+    int length=3;
+    float* arrayss = (float*) malloc(sizeof(float)*length);
     for(int i=0; i<length; i+=1){
-        arrayss[i] = 1;
+        arrayss[i] = 1.0+(float)i;
     }
-    float norma;
-    tess(arrayss, length, norma);
-    printf("=====> %.2f\n",norma);
+    stampaMatrice(arrayss, 1, length);
+    float norma=0.0;
+    float norma_2=0.0;
+    float* pn_2 = (float*)malloc(sizeof(float));
+    float* pn = (float*)malloc(sizeof(float));
+    *pn_2 = norma_2;
+    *pn = norma;
+    calcolaNorma_ass(arrayss, length, pn);
+    calcolaNorma(arrayss,length, pn_2);
+    printf("=======>%0.2f\n", pn_2[0]);
+    printf("=====> %.2f\n", pn[0]);
 printf("FINE PROCEDURA.\n");
 
 
