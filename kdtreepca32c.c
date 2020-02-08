@@ -213,13 +213,7 @@ void save_data(char* filename, void* X, int n, int k) {
 // PROCEDURE ASSEMBLY
 extern void prova(params* input);
 extern void calcolaNorma_ass(float* arr, int length, float* norma);
-
-
-/*
-*	Metodi di supporto
-*/
-
-
+extern void prodMatrVett_ass(float* m, float* v, int nRighe, int nColonne, int lengthVettore, float* risultato);
 
 void stampaMatrice(float* m, int r, int c){
     printf("\n");
@@ -250,6 +244,11 @@ void stampaMatriceInt(int* m, int r, int c){
     }
     
 }
+
+
+/*
+*	Metodi di supporto
+*/
 
 void divisioneMatriceScalare( float* m , float s, int nRighe, int nColonne, float* risultato){
     int i,j;
@@ -408,6 +407,7 @@ void nipals(params *input){
             divisioneVettoreScalare(input->v, t, input->k, input->v);
             
             calcolaNorma(input->v, input->k, &r);
+            //calcolaNorma_ass(input->v, input->k, &r);
             divisioneVettoreScalare(input->v, r, input->k, input->v);
 
             prodMatrVett(input->ds, input->v, input->n, input->k, input->k, input->u);
@@ -933,22 +933,29 @@ int main(int argc, char** argv) {
 
 
 printf("\nCHIAMATA PROCEDURA ASS\n");
-    int length=3;
-    float* arrayss = (float*) malloc(sizeof(float)*length);
-    for(int i=0; i<length; i+=1){
-        arrayss[i] = 1.0+(float)i;
+    int nRighe=4, nColonne=5;
+    float* v = (float*) malloc(sizeof(float)*nColonne);
+    float* m = (float*) malloc(sizeof(float)*nColonne*nRighe);
+
+    for(i=0; i<nRighe; i+=1){
+        for(j=0; j<nColonne; j+=1){
+            v[j]=1.0;
+            m[i*nColonne+j]=1.0+(float)(i+j);
+        }
     }
-    stampaMatrice(arrayss, 1, length);
-    float norma=0.0;
-    float norma_2=0.0;
-    float* pn_2 = (float*)malloc(sizeof(float));
-    float* pn = (float*)malloc(sizeof(float));
-    *pn_2 = norma_2;
-    *pn = norma;
-    calcolaNorma_ass(arrayss, length, pn);
-    calcolaNorma(arrayss,length, pn_2);
-    printf("=======>%0.2f\n", pn_2[0]);
-    printf("=====> %.2f\n", pn[0]);
+
+    stampaMatrice(m,nRighe,nColonne);
+    printf("\n\n");
+
+    float* ris_2 = (float*)malloc(sizeof(float));
+    float* ris = (float*)malloc(sizeof(float));
+
+    prodMatrVett(m,v,nRighe,nColonne,nColonne,ris_2);
+    prodMatrVett_ass(m,v,nRighe,nColonne,nColonne,ris);
+
+    stampaMatrice(ris,1,nRighe);
+    printf("\n\n\n");
+    stampaMatrice(ris_2,1,nRighe);
 printf("FINE PROCEDURA.\n");
 
 
