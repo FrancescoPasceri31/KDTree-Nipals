@@ -49,6 +49,7 @@ section .bss			; Sezione contenente dati non inizializzati
 ;vec2:		resq	4
 tmp: resd 1
 count: resd 1
+xmmTMP: resd 4
 
 section .text			; Sezione contenente il codice macchina
 
@@ -99,13 +100,39 @@ extern scanf
 global prova
 
 global calcolaNorma_ass
-
 global prodMatrVett_ass
+global prodScalare_ass
+global divisioneVettoreScalare_ass
+global divisioneMatriceScalare_ass
+global distanzaEuclidea_ass
 
 
 input		equ		8
 
 prova:
+	; ------------------------------------------------------------
+	; Sequenza di ingresso nella funzione
+	; ------------------------------------------------------------
+	push		ebp							; salva il Base Pointer
+	mov			ebp, esp					; il Base Pointer punta al Record di Attivazione corrente
+	push		ebx							; salva i registri da preservare
+	push		esi
+	push		edi
+	; ------------------------------------------------------------
+	; legge i parametri dal Record di Attivazione corrente
+	; ------------------------------------------------------------
+	; ------------------------------------------------------------
+	; Sequenza di uscita dalla funzione
+	; ------------------------------------------------------------
+	pop	edi									; ripristina i registri da preservare
+	pop	esi
+	pop	ebx
+	mov	esp, ebp							; ripristina lo Stack Pointer
+	pop	ebp									; ripristina il Base Pointer
+	ret										; torna alla funzione C chiamante
+
+
+distanzaEuclidea_ass:
 		; ------------------------------------------------------------
 		; Sequenza di ingresso nella funzione
 		; ------------------------------------------------------------
@@ -118,17 +145,308 @@ prova:
 		; legge i parametri dal Record di Attivazione corrente
 		; ------------------------------------------------------------
 
-		; elaborazione
+		; float* P +8 ,float* Q +12 , int dimen +16, float* dist +20
+		xorps xmm0,xmm0
+		mov ecx,[ebp+20]
+		movss [ecx],xmm0
 		
-		; esempio: stampa input->n e di input->k
-		mov EAX, [EBP+input]	; indirizzo della struttura contenente i parametri
-		; [EAX] contiene l'indirizzo della stringa con il nome del file
-		; [EAX+4] contiene l'indirizzo di partenza del data set
-		; [EAX+8] contiene l'indirizzo di partenza del query set
-;		printi dword[EAX+12]	; a 12 byte dall'inizio della struct si trova n
-;		printi dword[EAX+16]	; a 4 byte da n si trova k
+		mov edx,0
+		mov eax,[ebp+16]
+		div dword[quattro]
+		mov edi, eax
 		
+		xorps xmm7,xmm7
 
+		xor esi,esi
+		ciclo_quoziente_DE:
+			cmp esi,edi
+			jge fine_quoziente_DE
+
+			mov edx,0
+			mov eax,16
+			mul esi
+			mov edx,[ebp+8]
+			mov ebx, [ebp+12]
+			movups xmm0, [edx+eax]
+			movups xmm1, [ebx+eax]
+			; ho caricato i 4 elementi dei due vettori
+
+			subps xmm0,xmm1
+			mulps xmm0,xmm0
+
+			haddps xmm0,xmm0
+			haddps xmm0,xmm0
+
+			addss xmm7,xmm0
+
+			add esi,1
+			jmp ciclo_quoziente_DE
+
+		fine_quoziente_DE:
+		mov edx,0
+		mov eax,4
+		mul esi
+		mov esi,eax ; in esi ho esi*4 = colonna corrente da cui iniziare l'analisi singola
+
+		mov edi, [ebp+16]
+		cmp esi,edi
+		je fine_ciclo_resto_DE
+
+		ciclo_resto_DE:
+			cmp esi,edi
+			jge fine_ciclo_resto_DE
+
+			mov edx,0
+			mov eax,4
+			mul esi
+			mov ebx,[ebp+8]
+			mov ecx,[ebp+12]
+			movss xmm0, [ebx+eax]
+			movss xmm1, [ecx+eax]
+			; ho caricato i due elementi
+
+			subss xmm0,xmm1
+			mulss xmm0,xmm0
+
+			addss xmm7,xmm0
+
+			add esi,1
+			jmp ciclo_resto_DE
+
+		fine_ciclo_resto_DE:
+		
+		mov eax,[ebp+20] ; ho preso il valore del puntatore del risultato
+		sqrtss xmm7,xmm7
+		movss [eax],xmm7
+
+		; ------------------------------------------------------------
+		; Sequenza di uscita dalla funzione
+		; ------------------------------------------------------------
+		pop	edi									; ripristina i registri da preservare
+		pop	esi
+		pop	ebx
+		mov	esp, ebp							; ripristina lo Stack Pointer
+		pop	ebp									; ripristina il Base Pointer
+		ret										; torna alla funzione C chiamante
+
+
+divisioneMatriceScalare_ass:
+	; ------------------------------------------------------------
+	; Sequenza di ingresso nella funzione
+	; ------------------------------------------------------------
+	push		ebp							; salva il Base Pointer
+	mov			ebp, esp					; il Base Pointer punta al Record di Attivazione corrente
+	push		ebx							; salva i registri da preservare
+	push		esi
+	push		edi
+	; ------------------------------------------------------------
+	; legge i parametri dal Record di Attivazione corrente
+	; ------------------------------------------------------------
+
+	; float* m +8, float s +12, int nRighe +16, int nColonne +20, float* risultato +24
+
+	
+
+
+
+	; ------------------------------------------------------------
+	; Sequenza di uscita dalla funzione
+	; ------------------------------------------------------------
+	pop	edi									; ripristina i registri da preservare
+	pop	esi
+	pop	ebx
+	mov	esp, ebp							; ripristina lo Stack Pointer
+	pop	ebp									; ripristina il Base Pointer
+	ret										; torna alla funzione C chiamante
+
+
+
+divisioneVettoreScalare_ass:
+	; ------------------------------------------------------------
+	; Sequenza di ingresso nella funzione
+	; ------------------------------------------------------------
+	push		ebp							; salva il Base Pointer
+	mov			ebp, esp					; il Base Pointer punta al Record di Attivazione corrente
+	push		ebx							; salva i registri da preservare
+	push		esi
+	push		edi
+	; ------------------------------------------------------------
+	; legge i parametri dal Record di Attivazione corrente
+	; ------------------------------------------------------------
+
+	; v, scalare, nColonne, rs
+	; v = +8
+	; sca = +12
+	; nCol = +16
+	; rs = +20 -> è un puntatore
+
+	mov edx,0
+	mov eax,[ebp+16]
+	div dword[quattro]
+	mov edi,eax ; in edi ho il numero di volte che posso ciclare con xmm0 = nColonne/4
+
+	xor esi,esi
+	ciclo_quoziente_DVS:
+		cmp esi,edi
+		jge fine_ciclo_quoziente_DVS
+
+		;xorps xmm0,xmm0
+		mov edx,0
+		mov eax,16
+		mul esi
+		mov edx,[ebp+8]
+		movups xmm0, [edx+eax]
+		; ho caricato i 4 elementi del vettore
+
+		movss xmm1, [ebp+12]
+		shufps xmm1,xmm1,0
+
+		divps xmm0,xmm1
+
+		mov edx,[ebp+20]
+		movups [edx+eax],xmm0
+
+		add esi, 1
+		jmp ciclo_quoziente_DVS
+
+	fine_ciclo_quoziente_DVS:
+	mov edx,0
+	mov eax,4
+	mul esi
+	mov esi,eax ; in esi ho esi*4 = colonna corrente da cui iniziare l'analisi singola
+
+	mov edi, [ebp+16]
+	cmp esi,edi
+	je fine_ciclo_resto_DVS
+
+	ciclo_resto_DVS:
+		cmp esi,edi
+		jge fine_ciclo_resto_DVS
+
+		mov edx,0
+		mov eax,4
+		mul esi
+		mov ebx,[ebp+8]
+		movss xmm0, [ebx+eax]
+		; ho caricato l'elemento del vettore
+
+		movss xmm1, [ebp+12]
+		; ho caricato lo scalare
+
+		divss xmm0,xmm1
+
+		mov edx,[ebp+20]
+		movss [edx+eax],xmm0
+
+		add esi,1
+		jmp ciclo_resto_DVS
+
+	fine_ciclo_resto_DVS:
+
+	; ------------------------------------------------------------
+	; Sequenza di uscita dalla funzione
+	; ------------------------------------------------------------
+	pop	edi									; ripristina i registri da preservare
+	pop	esi
+	pop	ebx
+	mov	esp, ebp							; ripristina lo Stack Pointer
+	pop	ebp									; ripristina il Base Pointer
+	ret										; torna alla funzione C chiamante
+
+
+
+prodScalare_ass:
+		; ------------------------------------------------------------
+		; Sequenza di ingresso nella funzione
+		; ------------------------------------------------------------
+		push		ebp							; salva il Base Pointer
+		mov			ebp, esp					; il Base Pointer punta al Record di Attivazione corrente
+		push		ebx							; salva i registri da preservare
+		push		esi
+		push		edi
+		; ------------------------------------------------------------
+		; legge i parametri dal Record di Attivazione corrente
+		; ------------------------------------------------------------
+
+
+		; (float* v1,int dim1,float* v2,int dim2,float* rs)
+		; v1 -> ebp+8
+		; dim1 -> ebp+12
+		; v2 -> ebp+16
+		; dim2 -> ebp+20
+		; rs -> ebp+24 è un puntatore per cui il valore va in [[ebp+24]]
+
+		mov eax, [ebp+12]
+		cmp eax,[ebp+20]
+		jne uscita_prodottoScalare_ass_PS
+
+		mov edx,0
+		mov eax,[ebp+12]
+		div dword[quattro]
+		mov edi,eax ; in edi ho il numero di volte che posso ciclare con xmm0 = nColonne/4
+
+		xorps xmm7,xmm7
+
+		xor esi,esi
+		ciclo_quoziente_PS:
+			cmp esi,edi
+			jge fine_ciclo_quoziente_PS
+
+			mov edx,0
+			mov eax,16
+			mul esi
+			mov edx,[ebp+8]
+			mov ebx, [ebp+16]
+			movups xmm0, [edx+eax]
+			movups xmm1, [ebx+eax]
+			; ho caricato i 4 elementi dei due vettori
+
+			mulps xmm0,xmm1
+
+			haddps xmm0,xmm0
+			haddps xmm0,xmm0
+
+			addss xmm7,xmm0
+
+			add esi, 1
+			jmp ciclo_quoziente_PS
+
+		fine_ciclo_quoziente_PS:
+		mov edx,0
+		mov eax,4
+		mul esi
+		mov esi,eax ; in esi ho esi*4 = colonna corrente da cui iniziare l'analisi singola
+
+		mov edi, [ebp+12]
+		cmp esi,edi
+		je fine_ciclo_resto_PS
+
+		ciclo_resto_PS:
+			cmp esi,edi
+			jge fine_ciclo_resto_PS
+
+			mov edx,0
+			mov eax,4
+			mul esi
+			mov ebx,[ebp+8]
+			mov ecx,[ebp+16]
+			movss xmm0, [ebx+eax]
+			movss xmm1, [ecx+eax]
+			; ho caricato i due elementi
+
+			mulss xmm0,xmm1
+
+			addss xmm7,xmm0
+
+			add esi,1
+			jmp ciclo_resto_PS
+
+		fine_ciclo_resto_PS:
+		
+		mov eax,[ebp+24] ; ho preso il valore del puntatore del risultato
+		movss [eax],xmm7
+
+		uscita_prodottoScalare_ass_PS:
 		; ------------------------------------------------------------
 		; Sequenza di uscita dalla funzione
 		; ------------------------------------------------------------
@@ -139,6 +457,9 @@ prova:
 		mov	esp, ebp							; ripristina lo Stack Pointer
 		pop	ebp									; ripristina il Base Pointer
 		ret										; torna alla funzione C chiamante
+
+
+
 
 
 
@@ -168,7 +489,7 @@ prodMatrVett_ass:
 	mov eax, [ebp+20]
 	mov ebx, [ebp+24]
 	cmp eax,ebx
-	jne uscita_prodMatrVett_ass
+	jne uscita_prodMatrVett_ass_PMV
 
 	mov edx,0
 	mov eax, [ebp+16]
@@ -176,9 +497,9 @@ prodMatrVett_ass:
 	mov edi, eax ; ho ottenuto il nRighe/4 in EDI
 
 	xor esi,esi
-	ciclo_esterno_1:
+	ciclo_esterno_1_PMV:
 		cmp esi,edi
-		jge fine_ciclo_esterno_1
+		jge fine_ciclo_esterno_1_PMV
 		; altrimenti prendo 4 righe alla volta
 
 		mov edx,0
@@ -197,9 +518,9 @@ prodMatrVett_ass:
 		; inserisco in ESI = ESI*4 per trovare il primo indice riga delle 4 da analizzare
 
 		xor ecx,ecx
-		ciclo_interno_1:
+		ciclo_interno_1_PMV:
 			cmp ecx,ebx
-			jge fine_ciclo_interno_1
+			jge fine_ciclo_interno_1_PMV
 
 			mov edx,0
 			mov eax, [ebp+20]
@@ -294,13 +615,13 @@ prodMatrVett_ass:
 			sub esi,3
 			mov edx,0
 			mov eax,esi
-			div dword[quattro]
+			;div dword[quattro]
 			mov esi,eax
 			; riporto esi al valore del ciclo esterno 1
 
-			jmp ciclo_interno_1
+			jmp ciclo_interno_1_PMV
 
-		fine_ciclo_interno_1:
+		fine_ciclo_interno_1_PMV:
 		
 		xor edi,edi
 		; ci manca il ciclo interno 2 in cui cicliamo sulle singole colonne dopo aver
@@ -312,21 +633,12 @@ prodMatrVett_ass:
 		mov ebx, [ebp+20]
 
 		cmp ecx,ebx
-		je concluso_4_righe
+		je concluso_4_righe_PMV
 
-		ciclo_interno_2:
+		ciclo_interno_2_PMV:
+			mov ebx, [ebp+20]
 			cmp ecx,ebx
-			jge concluso_4_righe
-
-		mov edx, ecx
-		push edx
-		push intero
-		call printf
-		pop edx
-		pop edx
-		pushad
-		call getchar
-		popad
+			jge concluso_4_righe_PMV
 
 			mov edx,0
 			mov eax,4
@@ -340,19 +652,7 @@ prodMatrVett_ass:
 			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
 			mov edx, [ebp+8]
 			movss xmm0, [edx+eax]
-
-		movss [tmp],xmm0
-		mov edx,[tmp]
-		push edx
-		push esad
-		call printf
-		pop edx
-		pop edx
-		pushad
-		call getchar
-		popad
-
-
+ 
 			xor eax,eax
 			add esi,1
 			mov edx,0
@@ -396,66 +696,177 @@ prodMatrVett_ass:
 			add eax,ebx
 			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
 			mov edx, [ebp+8]
-			_00:movss xmm3, [edx+eax]
-
+			movss xmm3, [edx+eax]
 			; nei primi 32 bit di xmm0,xmm1,xmm2,xmm3 ho i valori delle colonne
 			
-			_10:mov edx,0
-			_12:mov eax,4
-			_13:mul ecx
-			_14:mov edx,[ebp+12]
-			_15:movss xmm4, [edx+eax]
+			mov edx,0
+			mov eax,4
+			mul ecx
+			mov edx,[ebp+12]
+			movss xmm4, [edx+eax]
 			; ho in xmm4 l'elemento del vettore
 
-			_20:mulss xmm0,xmm4
-			_22:mulss xmm1,xmm4
-			_21:mulss xmm2,xmm4
-			_23:mulss xmm3,xmm4
+			mulss xmm0,xmm4
+			mulss xmm1,xmm4
+			mulss xmm2,xmm4
+			mulss xmm3,xmm4
 
-			_30:shufps xmm0,xmm1,0
-			_31:shufps xmm2,xmm3,0
-			_32:shufps xmm0,xmm2,136 ; come prima
+			shufps xmm0,xmm1,0
+			shufps xmm2,xmm3,0
+			shufps xmm0,xmm2,136 ; come prima
 
-			_44:addps xmm7,xmm0
+			addps xmm7,xmm0
 
-			_55:sub esi,3
-			_51:mov edx,0
-			_52:mov eax,esi
-			_53:div dword[quattro]
-			_54:mov esi,eax
+			sub esi,3
+			mov edx,0
+			mov eax,esi
+			;_53:div dword[quattro]
+			mov esi,eax
 
 			add ecx,1
-			jmp ciclo_interno_2
+			jmp ciclo_interno_2_PMV
 
-		concluso_4_righe:
+		concluso_4_righe_PMV:
 		pop edi
+
+		mov edx,0
+		mov eax,esi
+		div dword[quattro]
+		mov esi,eax
 
 		mov ebx,[ebp+28] ; prendo il puntatore del vettore risultato
 		mov edx,0
 		mov eax,16
-		mul edi
+		mul esi
+
 		movups [ebx+eax],xmm7
 
-	fine_ciclo_esterno_1:
+		add esi,1
+		jmp ciclo_esterno_1_PMV
+
+	fine_ciclo_esterno_1_PMV:
 	mov edx,0
 	mov eax,esi
 	mul dword[quattro]
 	mov esi,eax
 	mov edi,[ebp+16]
 	cmp esi,edi ; controllo se ho fatto tutte le righe con 4 alla volta
-	je uscita_prodMatrVett_ass
+	je uscita_prodMatrVett_ass_PMV
 
-	ciclo_esterno_2:	; svolgiamo una riga alla volta
+	ciclo_esterno_2_PMV:	; svolgiamo una riga alla volta
 		cmp esi,edi
-		jge uscita_prodMatrVett_ass
+		jge uscita_prodMatrVett_ass_PMV
+		
+		push edi
 
+		; in esi ho l'indice riga
+		mov edx,0
+		mov eax, [ebp+20]
+		div dword[quattro] ; eax = nColone/4
+		mov ebx, eax
 
+		xorps xmm7,xmm7
 
+		xor ecx,ecx
+		ciclo_quoziente_2_PMV:
+			cmp ecx,ebx
+			jge fine_ciclo_quoziente_2_PMV
 
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			xor edi,edi
+			mov edi, eax
+			mov edx,0
+			mov eax, 16
+			mul ecx
+			add eax,edi
+			; ho ottenuto indiceRiga*(nColonne*4 byte) + (16 byte*indiceColonna) [esi*[ebp+20]*4 + 16*ecx]
+			mov edx, [ebp+8]
+			movups xmm0, [edx+eax]	; ho caricato la prima riga
 
+			mov edx,0
+			mov eax, 16
+			mul ecx
+			; in eax ho ecx*16 = indice del vettore
+			mov edx, [ebp+12]
+			movups xmm4, [edx+eax]
+			; ho caricato il vettore in xmm4
 
+			mulps xmm0,xmm4
 
-	uscita_prodMatrVett_ass:
+			haddps xmm0,xmm0
+			haddps xmm0,xmm0
+			; nei primi 32 bit ho la somma di 4 elementi moltiplcati per i 4 del vettore
+
+			addss xmm7,xmm0
+			; ho aggiunto la somma temporanea nel registro
+
+			add ecx,1
+			jmp ciclo_quoziente_2_PMV
+
+		fine_ciclo_quoziente_2_PMV:
+		; ho terminato le colonne prese a 4 ora conto le singole
+
+		mov edx,0
+		mov eax,4
+		mul ecx
+		mov ecx,eax
+		mov ebx, [ebp+20]
+
+		cmp ecx,ebx
+		jge fine_ciclo_resto_2_PMV
+
+		ciclo_resto_2_PMV:
+			mov ebx,[ebp+20]
+			cmp ecx,ebx
+			jge fine_ciclo_resto_2_PMV
+
+			mov edx,0
+			mov eax,4
+			mul ecx
+			mov ebx, eax ; in ebx ho ecx*4 che è un indice di colonna	
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			add eax,ebx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
+			mov edx, [ebp+8]
+			movss xmm0, [edx+eax]
+			; nei primi 32 di xmm0 ho inserito l'elemento della matrice
+
+			mov edx,0
+			mov eax,4
+			mul ecx
+			mov edx,[ebp+12]
+			movss xmm4, [edx+eax]
+			; ho in xmm4 l'elemento del vettore
+			
+			mulss xmm0,xmm4
+
+			addss xmm7,xmm0
+
+			add ecx,1
+			jmp ciclo_resto_2_PMV
+
+		fine_ciclo_resto_2_PMV:
+		
+		; prendere i primi 32 bit di xmm7 ed aggiungerli in posizione del vettore ebp+28
+		mov edx,0
+		mov eax,4
+		mul esi
+		
+		mov ecx,[ebp+28]
+		movss [ecx+eax],xmm7
+
+		pop edi
+
+		add esi,1
+		jmp ciclo_esterno_2_PMV
+
+	uscita_prodMatrVett_ass_PMV:
 	; ------------------------------------------------------------
 	; Sequenza di uscita dalla funzione
 	; ------------------------------------------------------------
@@ -490,7 +901,9 @@ calcolaNorma_ass:
 	; per calcolare la norma devo fare loop unrolling quoziente su un registro xmm per length/4 volte
 	; e successivamente per la differenza devo eseguire un loop resto
 
+	xorps xmm0,xmm0
 	mov ecx, [ebp+16] ; prendo il puntatore alla norma
+	movss [ecx],xmm0
 
 	mov edx,0
 	mov eax,[ebp+12]
@@ -498,9 +911,9 @@ calcolaNorma_ass:
 	mov edi,eax
 
 	xor esi, esi
-	ciclo_quoz:
+	ciclo_quoz_CN:
 		cmp esi, edi
-		je continua
+		je continua_CN
 		mov ebx,[ebp+8] ; prendo il puntatore all'array
 		mov edx,0
 		mov eax, 16 ; moltiplico esi per 16 in maniera tale da saltare 4 elementi
@@ -514,9 +927,9 @@ calcolaNorma_ass:
 		addss xmm1,xmm0 ; sommo norma a quello calcolato prima
 		movss [ecx],xmm1 ; la rimetto in memoria
 		add esi,1
-		jmp ciclo_quoz
+		jmp ciclo_quoz_CN
 
-	continua:
+	continua_CN:
 		mov edx,0
 		mov eax,esi
 		mul dword[quattro]
@@ -524,11 +937,11 @@ calcolaNorma_ass:
 		mov edi, [ebp+12]
 
 		cmp esi,edi
-		je fine_calcolaNorma_ass
+		je fine_calcolaNorma_ass_CN
 
-	ciclo_resto:
+	ciclo_resto_CN:
 		cmp esi,edi
-		je fine_calcolaNorma_ass
+		je fine_calcolaNorma_ass_CN
 		mov ebx,[ebp+8]
 		movss xmm0,[ebx+4*esi]
 		mulss xmm0,xmm0
@@ -537,10 +950,10 @@ calcolaNorma_ass:
 		addss xmm1, xmm0
 		movss [ecx],xmm1
 		add esi,1
-		jmp ciclo_resto
+		jmp ciclo_resto_CN
 
 
-	fine_calcolaNorma_ass:
+	fine_calcolaNorma_ass_CN:
 	movss xmm0, [ecx]
 	sqrtss xmm0,xmm0
 	movss [ecx],xmm0

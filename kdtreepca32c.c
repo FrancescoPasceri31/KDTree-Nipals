@@ -214,6 +214,11 @@ void save_data(char* filename, void* X, int n, int k) {
 extern void prova(params* input);
 extern void calcolaNorma_ass(float* arr, int length, float* norma);
 extern void prodMatrVett_ass(float* m, float* v, int nRighe, int nColonne, int lengthVettore, float* risultato);
+extern void prodScalare_ass(float* v1,int dim1,float* v2,int dim2,float* rs);
+extern void divisioneVettoreScalare_ass(float* v, float s, int dim, float* risultato);
+extern void divisioneMatriceScalare_ass(float* m , float s, int nRighe, int nColonne, float* risultato);
+extern void distanzaEuclidea_ass(float* P,float* Q, int dimen, float* dist);
+
 
 void stampaMatrice(float* m, int r, int c){
     printf("\n");
@@ -286,7 +291,7 @@ void prodScalare(float* v1, int dim1, float* v2, int dim2, float *r){
     int i;
     *r=0.0;
 
-    if(dim1=dim2){
+    if(dim1==dim2){
         for(i=0; i<dim1; i++)
             *r+= v1[i]*v2[i];     
     }    
@@ -354,7 +359,6 @@ void divisioneVettoreScalare(float* v, float s, int dim, float* risultato){
 void distanzaEuclidea(float* P,float* Q, int dimen, float* dist){
     int i;
     *dist=0;
-
     for(i=0; i<dimen; i++){
         *dist+= powf(P[i]-Q[i],2);    
     }
@@ -399,24 +403,40 @@ void nipals(params *input){
         float t,t1;
         float r;
         do{
-
             trasponi(input->ds, input->n, input->k, input->dsTras);
-            prodScalare(input->u, input->n, input->u, input->n, &t);
-        
-            prodMatrVett(input->dsTras, input->u, input->k, input->n, input->n, input->v);
-            divisioneVettoreScalare(input->v, t, input->k, input->v);
             
-            calcolaNorma(input->v, input->k, &r);
-            //calcolaNorma_ass(input->v, input->k, &r);
-            divisioneVettoreScalare(input->v, r, input->k, input->v);
+            //prodScalare(input->u, input->n, input->u, input->n, &t);
+            prodScalare_ass(input->u, input->n, input->u, input->n, &t);
+            //stampaMatrice(input->u, 1, input->n);
+            //printf("%.2f - %.2f\n========================================\n",t,ts);
 
-            prodMatrVett(input->ds, input->v, input->n, input->k, input->k, input->u);
+            //prodMatrVett(input->dsTras, input->u, input->k, input->n, input->n, input->v);
+            prodMatrVett_ass(input->dsTras, input->u, input->k, input->n, input->n, input->v);
+            //stampaMatrice(input->v, 1, input->k);
 
-            prodScalare(input->v, input->k,input->v, input->k, &r);
-            divisioneVettoreScalare(input->u, r, input->n, input->u);
+            //divisioneVettoreScalare(input->v, t, input->k, input->v);
+            divisioneVettoreScalare_ass(input->v, t, input->k, input->v);
+            //stampaMatrice(input->v, 1, input->k);
 
-            prodScalare(input->u, input->n, input->u, input->n, &t1);
+            //calcolaNorma(input->v, input->k, &r);
+            calcolaNorma_ass(input->v, input->k, &r);
+            //printf("%.2f\n",r);
 
+            //divisioneVettoreScalare(input->v, r, input->k, input->v);
+            divisioneVettoreScalare_ass(input->v, r, input->k, input->v);
+
+            //prodMatrVett(input->ds, input->v, input->n, input->k, input->k, input->u);
+            prodMatrVett_ass(input->ds, input->v, input->n, input->k, input->k, input->u);
+
+            //prodScalare(input->v, input->k,input->v, input->k, &r);
+            prodScalare_ass(input->v, input->k,input->v, input->k, &r);
+            
+            //divisioneVettoreScalare(input->u, r, input->n, input->u);
+            divisioneVettoreScalare_ass(input->u, r, input->n, input->u);
+
+            //prodScalare(input->u, input->n, input->u, input->n, &t1);
+            prodScalare_ass(input->u, input->n, input->u, input->n, &t1);
+            
         }while( fabsf( t1 - t) >= soglia*t1);
  
         int j;
@@ -661,7 +681,9 @@ void distance( float* querySet, int nColonne, int indQ, KDTREE *nodo, params* in
         else 
             input->Point[j]= querySet[indQ * nColonne +j];        
     }
-    distanzaEuclidea(input->Point, input->Qoint, nColonne, dist);
+    //distanzaEuclidea(input->Point, input->Qoint, nColonne, dist);
+    distanzaEuclidea_ass(input->Point, input->Qoint, nColonne, dist);
+
 //printf("DISTANZA PRIMA puntoDS %d - puntoQS %d : %.2f\n",nodo->indP, indQ, dist);
 }
 
@@ -685,7 +707,8 @@ void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int 
         }
 
 
-        distanzaEuclidea(n->P, input-> Qoint, nColonne, &dist);
+        //distanzaEuclidea(n->P, input-> Qoint, nColonne, &dist);
+        distanzaEuclidea_ass(n->P, input-> Qoint, nColonne, &dist);
         //printf("DISTANZA DOPO puntoDS %d - puntoQS %d : %.2f\n\n",n->indP, indQ, dist);
 
         if(  dist <= input->r ){
@@ -933,29 +956,29 @@ int main(int argc, char** argv) {
 
 
 printf("\nCHIAMATA PROCEDURA ASS\n");
-    int nRighe=4, nColonne=5;
+    int nRighe=3, nColonne=9;
     float* v = (float*) malloc(sizeof(float)*nColonne);
-    float* m = (float*) malloc(sizeof(float)*nColonne*nRighe);
+    float* m = (float*) malloc(sizeof(float)*nColonne);
+    float scalare = 2.0;
 
-    for(i=0; i<nRighe; i+=1){
-        for(j=0; j<nColonne; j+=1){
-            v[j]=1.0;
-            m[i*nColonne+j]=1.0+(float)(i+j);
-        }
+    for(j=0; j<nColonne; j+=1){
+        v[j]= j;
+        m[j]= j+1;
     }
 
-    stampaMatrice(m,nRighe,nColonne);
-    printf("\n\n");
+    stampaMatrice(m,1,nColonne);
+    stampaMatrice(v,1,nColonne);
+    printf("\n");
 
-    float* ris_2 = (float*)malloc(sizeof(float));
-    float* ris = (float*)malloc(sizeof(float));
+    float* rs = (float*)malloc(sizeof(float));
+    float* rs_2 = (float*)malloc(sizeof(float));
+    
+    distanzaEuclidea(v,m,nColonne,rs);
+    distanzaEuclidea_ass(v,m,nColonne,rs_2);
 
-    prodMatrVett(m,v,nRighe,nColonne,nColonne,ris_2);
-    prodMatrVett_ass(m,v,nRighe,nColonne,nColonne,ris);
-
-    stampaMatrice(ris,1,nRighe);
-    printf("\n\n\n");
-    stampaMatrice(ris_2,1,nRighe);
+    printf("\n");    
+    printf("C: %.2f\n",*rs);
+    printf("\nASSEMBLY: %.2f\n",*rs_2);
 printf("FINE PROCEDURA.\n");
 
 
