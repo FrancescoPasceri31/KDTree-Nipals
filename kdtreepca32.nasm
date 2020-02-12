@@ -103,7 +103,7 @@ global calcolaNorma_ass
 global prodMatrVett_ass
 global prodScalare_ass
 global divisioneVettoreScalare_ass
-global divisioneMatriceScalare_ass
+global sottrazioneMatrici_ass
 global distanzaEuclidea_ass
 
 
@@ -121,6 +121,35 @@ prova:
 	; ------------------------------------------------------------
 	; legge i parametri dal Record di Attivazione corrente
 	; ------------------------------------------------------------
+	; ------------------------------------------------------------
+	; Sequenza di uscita dalla funzione
+	; ------------------------------------------------------------
+	pop	edi									; ripristina i registri da preservare
+	pop	esi
+	pop	ebx
+	mov	esp, ebp							; ripristina lo Stack Pointer
+	pop	ebp									; ripristina il Base Pointer
+	ret										; torna alla funzione C chiamante
+
+
+
+prodMatr_ass:
+	; ------------------------------------------------------------
+	; Sequenza di ingresso nella funzione
+	; ------------------------------------------------------------
+	push		ebp							; salva il Base Pointer
+	mov			ebp, esp					; il Base Pointer punta al Record di Attivazione corrente
+	push		ebx							; salva i registri da preservare
+	push		esi
+	push		edi
+	; ------------------------------------------------------------
+	; legge i parametri dal Record di Attivazione corrente
+	; ------------------------------------------------------------
+	
+	
+	
+	
+	
 	; ------------------------------------------------------------
 	; Sequenza di uscita dalla funzione
 	; ------------------------------------------------------------
@@ -229,8 +258,7 @@ distanzaEuclidea_ass:
 		pop	ebp									; ripristina il Base Pointer
 		ret										; torna alla funzione C chiamante
 
-
-divisioneMatriceScalare_ass:
+sottrazioneMatrici_ass:
 	; ------------------------------------------------------------
 	; Sequenza di ingresso nella funzione
 	; ------------------------------------------------------------
@@ -243,21 +271,500 @@ divisioneMatriceScalare_ass:
 	; legge i parametri dal Record di Attivazione corrente
 	; ------------------------------------------------------------
 
-	; float* m +8, float s +12, int nRighe +16, int nColonne +20, float* risultato +24
-
+	; float* m1 +8, float* m2 +12, int nRighe1 +16, int nColonne1 +20, int nRighe2 +24, int nColonne2 +28
+	; float* risultato +32
 	
+	mov eax, [ebp+16]
+	cmp eax,[ebp+24]
+	jne uscita_sottrazioneMatrice_ass_SM
+	mov eax, [ebp+20]
+	cmp eax,[ebp+28]
+	jne uscita_sottrazioneMatrice_ass_SM
 
+	mov edx,0
+	mov eax, [ebp+16]
+	div dword[quattro]
+	mov edi, eax ; ho ottenuto il nRighe/4 in EDI
 
+	xor esi,esi
+	ciclo_esterno_1_SM:
+		cmp esi,edi
+		jge fine_ciclo_esterno_1_SM
+		; altrimenti prendo 4 righe alla volta
 
+		mov edx,0
+		mov eax, [ebp+20]
+		div dword[quattro]	
+		mov ebx,eax	; in ebx ho nColonne/4
+
+		push edi
+
+		mov edx,0
+		mov eax,4
+		mul esi
+		mov esi,eax
+		; inserisco in ESI = ESI*4 per trovare il primo indice riga delle 4 da analizzare
+
+		xor ecx,ecx
+		ciclo_interno_1_SM:
+			cmp ecx,ebx
+			jge fine_ciclo_interno_1_SM
+
+			; in xmm0-1-2-3 mantengo la prima matrice
+			; in xmm4-5-6-7 mantengo la seconda matrice
+
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			xor edi,edi
+			mov edi, eax
+			mov edx,0
+			mov eax, 16
+			mul ecx
+			add eax,edi
+			; ho ottenuto indiceRiga*(nColonne*4 byte) + (16 byte*indiceColonna) [esi*[ebp+20]*4 + 16*ecx]
+			mov edx, [ebp+8]
+			movups xmm0, [edx+eax]	; ho caricato la prima riga
+			mov edx, [ebp+12]
+			movups xmm4, [edx+eax]
+
+			add esi,1
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			xor edi,edi
+			mov edi, eax
+			mov edx,0
+			mov eax, 16
+			mul ecx
+			add eax,edi
+			mov edx, [ebp+8]
+			movups xmm1, [edx+eax]
+			mov edx, [ebp+12]
+			movups xmm5, [edx+eax]
+	
+			add esi,1
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			xor edi,edi
+			mov edi, eax
+			mov edx,0
+			mov eax, 16
+			mul ecx
+			add eax,edi
+			mov edx, [ebp+8]
+			movups xmm2, [edx+eax]
+			mov edx, [ebp+12]
+			movups xmm6, [edx+eax]
+
+			add esi,1
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			xor edi,edi
+			mov edi, eax
+			mov edx,0
+			mov eax, 16
+			mul ecx
+			add eax,edi
+			mov edx, [ebp+8]
+			movups xmm3, [edx+eax]
+			mov edx, [ebp+12]
+			movups xmm7, [edx+eax]
+			; ho caricato le 4 righe in xmm0,xmm1,xmm2,xmm3
+
+			subps xmm0,xmm4
+			subps xmm1,xmm5
+			subps xmm2,xmm6
+			subps xmm3,xmm7
+			; ho sottratto gli elementi e devo inserirli in memoria
+
+			sub esi,3
+			mov edx,0
+			mov eax,esi
+			mov esi,eax			
+
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			xor edi,edi
+			mov edi, eax
+			mov edx,0
+			mov eax, 16
+			mul ecx
+			add eax,edi
+			; ho ottenuto indiceRiga*(nColonne*4 byte) + (16 byte*indiceColonna) [esi*[ebp+20]*4 + 16*ecx]
+			mov edx, [ebp+32]
+			movups [edx+eax], xmm0	; ho caricato la prima riga
+
+			add esi,1
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			xor edi,edi
+			mov edi, eax
+			mov edx,0
+			mov eax, 16
+			mul ecx
+			add eax,edi
+			mov edx, [ebp+32]
+			movups [edx+eax],xmm1
+	
+			add esi,1
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			xor edi,edi
+			mov edi, eax
+			mov edx,0
+			mov eax, 16
+			mul ecx
+			add eax,edi
+			mov edx, [ebp+32]
+			movups [edx+eax],xmm2
+
+			add esi,1
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			xor edi,edi
+			mov edi, eax
+			mov edx,0
+			mov eax, 16
+			mul ecx
+			add eax,edi
+			mov edx, [ebp+32]
+			movups [edx+eax],xmm3
+			; ho caricato le 4 righe da xmm0,xmm1,xmm2,xmm3
+			; in memoria
+
+			add ecx,1
+
+			sub esi,3
+			mov edx,0
+			mov eax,esi
+			;div dword[quattro]
+			mov esi,eax
+			; riporto esi al valore del ciclo esterno 1
+			jmp ciclo_interno_1_SM
+
+		fine_ciclo_interno_1_SM:
+		
+		xor edi,edi
+		; ci manca il ciclo interno 2 in cui cicliamo sulle singole colonne dopo aver
+		; controllato che non abbiamo raggiunto il nColonne giusto (ecx*4 == nColonne)
+		mov edx,0
+		mov eax,4
+		mul ecx
+		mov ecx,eax
+		mov ebx, [ebp+20]
+
+		cmp ecx,ebx
+		je concluso_4_righe_SM
+
+		ciclo_interno_2_SM:
+			mov ebx, [ebp+20]
+			cmp ecx,ebx
+			jge concluso_4_righe_SM
+
+			mov edx,0
+			mov eax,4
+			mul ecx
+			mov ebx, eax ; in ebx ho ecx*4 che è un indice di colonna		
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			add eax,ebx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
+			mov edx, [ebp+8]
+			movss xmm0, [edx+eax]
+			mov edx, [ebp+12]
+			movss xmm4, [edx+eax]
+ 
+			xor eax,eax
+			add esi,1
+			mov edx,0
+			mov eax,4
+			mul ecx
+			mov ebx, eax ; in ebx ho ecx*4 che è un indice di colonna		
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			add eax,ebx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
+			mov edx, [ebp+8]
+			movss xmm1, [edx+eax]
+			mov edx, [ebp+12]
+			movss xmm5, [edx+eax]
+
+			xor eax,eax
+			add esi,1
+			mov edx,0
+			mov eax,4
+			mul ecx
+			mov ebx, eax ; in ebx ho ecx*4 che è un indice di colonna		
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			add eax,ebx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
+			mov edx, [ebp+8]
+			movss xmm2, [edx+eax]
+			mov edx, [ebp+12]
+			movss xmm6, [edx+eax]
+
+			xor eax,eax
+			add esi,1
+			mov edx,0
+			mov eax,4
+			mul ecx
+			mov ebx, eax ; in ebx ho ecx*4 che è un indice di colonna		
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			add eax,ebx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
+			mov edx, [ebp+8]
+			movss xmm3, [edx+eax]
+			mov edx, [ebp+12]
+			movss xmm7, [edx+eax]
+			; nei primi 32 bit di xmm0,xmm1,xmm2,xmm3 ho i valori delle colonne
+			
+			subss xmm0,xmm4
+			subss xmm1,xmm4
+			subss xmm2,xmm4
+			subss xmm3,xmm4
+			; ho diviso tutti gli elementi per lo scalare
+
+			sub esi,3
+			mov edx,0
+			mov eax,esi
+			mov esi,eax
+
+			mov edx,0
+			mov eax,4
+			mul ecx
+			mov ebx, eax ; in ebx ho ecx*4 che è un indice di colonna		
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			add eax,ebx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
+			mov edx, [ebp+32]
+			movss [edx+eax],xmm0
+ 
+			xor eax,eax
+			add esi,1
+			mov edx,0
+			mov eax,4
+			mul ecx
+			mov ebx, eax ; in ebx ho ecx*4 che è un indice di colonna		
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			add eax,ebx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
+			mov edx, [ebp+32]
+			movss [edx+eax],xmm1
+
+			xor eax,eax
+			add esi,1
+			mov edx,0
+			mov eax,4
+			mul ecx
+			mov ebx, eax ; in ebx ho ecx*4 che è un indice di colonna		
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			add eax,ebx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
+			mov edx, [ebp+32]
+			movss [edx+eax],xmm2
+
+			xor eax,eax
+			add esi,1
+			mov edx,0
+			mov eax,4
+			mul ecx
+			mov ebx, eax ; in ebx ho ecx*4 che è un indice di colonna		
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			add eax,ebx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
+			mov edx, [ebp+32]
+			movss [edx+eax],xmm3
+
+			sub esi,3
+			mov edx,0
+			mov eax,esi
+			mov esi,eax
+
+			add ecx,1
+			jmp ciclo_interno_2_SM
+
+		concluso_4_righe_SM:
+		pop edi
+
+		mov edx,0
+		mov eax,esi
+		div dword[quattro]
+		mov esi,eax
+
+		add esi,1
+		jmp ciclo_esterno_1_SM
+
+	fine_ciclo_esterno_1_SM:
+	mov edx,0
+	mov eax,esi
+	mul dword[quattro]
+	mov esi,eax
+	
+	mov edi,[ebp+16]
+	cmp esi,edi ; controllo se ho fatto tutte le righe con 4 alla volta
+	je uscita_sottrazioneMatrice_ass_SM
+
+	ciclo_esterno_2_SM:	; svolgiamo una riga alla volta
+		cmp esi,edi
+		jge uscita_sottrazioneMatrice_ass_SM
+		
+		push edi
+
+		; in esi ho l'indice riga
+		mov edx,0
+		mov eax, [ebp+20]
+		div dword[quattro] ; eax = nColonne/4
+		mov ebx, eax
+
+		xorps xmm7,xmm7
+
+		xor ecx,ecx
+		ciclo_quoziente_2_SM:
+			cmp ecx,ebx
+			jge fine_ciclo_quoziente_2_SM
+
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			xor edi,edi
+			mov edi, eax
+			mov edx,0
+			mov eax, 16
+			mul ecx
+			add eax,edi
+			; ho ottenuto indiceRiga*(nColonne*4 byte) + (16 byte*indiceColonna) [esi*[ebp+20]*4 + 16*ecx]
+			mov edx, [ebp+8]
+			movups xmm0, [edx+eax]	; ho caricato la prima riga
+			mov edx, [ebp+12]
+			movups xmm4, [edx+eax]
+
+			subps xmm0,xmm4
+
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			xor edi,edi
+			mov edi, eax
+			mov edx,0
+			mov eax, 16
+			mul ecx
+			add eax,edi
+			; ho ottenuto indiceRiga*(nColonne*4 byte) + (16 byte*indiceColonna) [esi*[ebp+20]*4 + 16*ecx]
+			mov edx, [ebp+32]
+			movups [edx+eax],xmm0	; ho caricato la prima riga
+
+			add ecx,1
+			jmp ciclo_quoziente_2_SM
+
+		fine_ciclo_quoziente_2_SM:
+		; ho terminato le colonne prese a 4 ora conto le singole
+
+		mov edx,0
+		mov eax,4
+		mul ecx
+		mov ecx,eax
+		mov ebx, [ebp+20]
+
+		cmp ecx,ebx
+		jge fine_ciclo_resto_2_SM
+
+		ciclo_resto_2_SM:
+			mov ebx,[ebp+20]
+			cmp ecx,ebx
+			jge fine_ciclo_resto_2_SM
+
+			mov edx,0
+			mov eax,4
+			mul ecx
+			mov ebx, eax ; in ebx ho ecx*4 che è un indice di colonna	
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			add eax,ebx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
+			mov edx, [ebp+8]
+			movss xmm0, [edx+eax]
+			mov edx, [ebp+12]
+			movss xmm4, [edx+eax]
+			; nei primi 32 di xmm0 ho inserito l'elemento della matrice
+
+			subss xmm0,xmm4
+
+			mov edx,0
+			mov eax,4
+			mul ecx
+			mov ebx, eax ; in ebx ho ecx*4 che è un indice di colonna	
+			mov edx,0
+			mov eax, [ebp+20]
+			mul dword[quattro]
+			mul esi
+			add eax,ebx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
+			mov edx, [ebp+32]
+			movss [edx+eax],xmm0
+
+			add ecx,1
+			jmp ciclo_resto_2_SM
+
+		fine_ciclo_resto_2_SM:
+		
+		pop edi
+
+		add esi,1
+		jmp ciclo_esterno_2_SM
+
+	uscita_sottrazioneMatrice_ass_SM:
 	; ------------------------------------------------------------
 	; Sequenza di uscita dalla funzione
 	; ------------------------------------------------------------
+	
 	pop	edi									; ripristina i registri da preservare
 	pop	esi
 	pop	ebx
 	mov	esp, ebp							; ripristina lo Stack Pointer
 	pop	ebp									; ripristina il Base Pointer
 	ret										; torna alla funzione C chiamante
+
 
 
 
@@ -977,4 +1484,9 @@ calcolaNorma_ass:
 	mov	esp, ebp							; ripristina lo Stack Pointer
 	pop	ebp									; ripristina il Base Pointer
 	ret										; torna alla funzione C chiamante
+
+
+
+
+
 

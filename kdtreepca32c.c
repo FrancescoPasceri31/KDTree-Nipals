@@ -216,7 +216,7 @@ extern void calcolaNorma_ass(float* arr, int length, float* norma);
 extern void prodMatrVett_ass(float* m, float* v, int nRighe, int nColonne, int lengthVettore, float* risultato);
 extern void prodScalare_ass(float* v1,int dim1,float* v2,int dim2,float* rs);
 extern void divisioneVettoreScalare_ass(float* v, float s, int dim, float* risultato);
-extern void divisioneMatriceScalare_ass(float* m , float s, int nRighe, int nColonne, float* risultato);
+extern void sottrazioneMatrici_ass(float* m1, float* m2, int nRighe1, int nColonne1, int nRighe2, int nColonne2, float* risultato);
 extern void distanzaEuclidea_ass(float* P,float* Q, int dimen, float* dist);
 
 
@@ -255,14 +255,14 @@ void stampaMatriceInt(int* m, int r, int c){
 *	Metodi di supporto
 */
 
-void divisioneMatriceScalare( float* m , float s, int nRighe, int nColonne, float* risultato){
+/*void divisioneMatriceScalare( float* m , float s, int nRighe, int nColonne, float* risultato){
     int i,j;
         for(i=0; i<nRighe; i++){
             for(j=0; j<nColonne; j++){
                 risultato[i*nColonne+j]= m[ i*nColonne +j ]/s;
             }
         }
-}
+}*/
 
 void trasponi(float* m, int nRighe, int nColonne, float* risultato){
     int i, j;
@@ -339,7 +339,7 @@ void prodMatrici(float* m1, int nRighe1, int nColonne1, float* m2, int nRighe2, 
     }
 }
 
-void prodVettori(float* v1, int dim1, float* v2, int dim2, float* risultato){
+/*void prodVettori(float* v1, int dim1, float* v2, int dim2, float* risultato){
     int i,j;
     for (i = 0; i < dim1; i++){
         for(j=0; j<dim2; j++){
@@ -347,7 +347,7 @@ void prodVettori(float* v1, int dim1, float* v2, int dim2, float* risultato){
         }
     }
     
-}
+}*/
 
 void divisioneVettoreScalare(float* v, float s, int dim, float* risultato){
     int i;
@@ -407,20 +407,15 @@ void nipals(params *input){
             
             //prodScalare(input->u, input->n, input->u, input->n, &t);
             prodScalare_ass(input->u, input->n, input->u, input->n, &t);
-            //stampaMatrice(input->u, 1, input->n);
-            //printf("%.2f - %.2f\n========================================\n",t,ts);
 
             //prodMatrVett(input->dsTras, input->u, input->k, input->n, input->n, input->v);
             prodMatrVett_ass(input->dsTras, input->u, input->k, input->n, input->n, input->v);
-            //stampaMatrice(input->v, 1, input->k);
 
             //divisioneVettoreScalare(input->v, t, input->k, input->v);
             divisioneVettoreScalare_ass(input->v, t, input->k, input->v);
-            //stampaMatrice(input->v, 1, input->k);
 
             //calcolaNorma(input->v, input->k, &r);
             calcolaNorma_ass(input->v, input->k, &r);
-            //printf("%.2f\n",r);
 
             //divisioneVettoreScalare(input->v, r, input->k, input->v);
             divisioneVettoreScalare_ass(input->v, r, input->k, input->v);
@@ -447,8 +442,11 @@ void nipals(params *input){
             input->V[j*input->h+i]=input->v[j];
         }
 
-        prodVettori(input->u, input->n, input->v, input->k, input->dsTras);
-        sottrazioneMatrici(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
+        prodMatrici(input->u, input->n, 1, input->v, 1, input->k, input->dsTras);
+
+        //sottrazioneMatrici(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
+        sottrazioneMatrici_ass(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
+        
         }
     }
 
@@ -956,29 +954,33 @@ int main(int argc, char** argv) {
 
 
 printf("\nCHIAMATA PROCEDURA ASS\n");
-    int nRighe=3, nColonne=9;
-    float* v = (float*) malloc(sizeof(float)*nColonne);
-    float* m = (float*) malloc(sizeof(float)*nColonne);
-    float scalare = 2.0;
+    int nRighe=7, nColonne=9;
+    float* v = (float*) malloc(sizeof(float)*nColonne*nRighe);
+    float* m = (float*) malloc(sizeof(float)*nColonne*nRighe);
+    float scalare = 2.3;
 
-    for(j=0; j<nColonne; j+=1){
-        v[j]= j;
-        m[j]= j+1;
+    for(i=0; i<nRighe; i+=1){
+        for(j=0; j<nColonne; j+=1){
+        v[i*nColonne+j]= j+i * scalare;
+        m[i*nColonne+j]= j-1 / (scalare-1);
+        }
     }
 
-    stampaMatrice(m,1,nColonne);
-    stampaMatrice(v,1,nColonne);
+    stampaMatrice(v,nRighe,nColonne);
+    stampaMatrice(m,nRighe,nColonne);
     printf("\n");
 
-    float* rs = (float*)malloc(sizeof(float));
-    float* rs_2 = (float*)malloc(sizeof(float));
+    float* rs = (float*) malloc(sizeof(float)*nColonne*nRighe);
+    float* rs_2 = (float*) malloc(sizeof(float)*nColonne*nRighe);
     
-    distanzaEuclidea(v,m,nColonne,rs);
-    distanzaEuclidea_ass(v,m,nColonne,rs_2);
+    sottrazioneMatrici(v, m, nRighe, nColonne, nRighe, nColonne, rs);
+    sottrazioneMatrici(v,m, nRighe, nColonne, nRighe, nColonne, rs_2);
 
     printf("\n");    
-    printf("C: %.2f\n",*rs);
-    printf("\nASSEMBLY: %.2f\n",*rs_2);
+    printf("C:\n");
+    stampaMatrice(rs,nRighe,nColonne);
+    printf("\nASSEMBLY\n");
+    stampaMatrice(rs_2, nRighe, nColonne);
 printf("FINE PROCEDURA.\n");
 
 
