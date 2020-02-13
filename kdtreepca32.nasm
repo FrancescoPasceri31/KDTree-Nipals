@@ -105,11 +105,12 @@ global prodScalare_ass
 global divisioneVettoreScalare_ass
 global sottrazioneMatrici_ass
 global distanzaEuclidea_ass
-
+global prodMatr_ass
+global trasponi_ass
 
 input		equ		8
 
-prova:
+trasponi_ass:
 	; ------------------------------------------------------------
 	; Sequenza di ingresso nella funzione
 	; ------------------------------------------------------------
@@ -121,6 +122,205 @@ prova:
 	; ------------------------------------------------------------
 	; legge i parametri dal Record di Attivazione corrente
 	; ------------------------------------------------------------
+
+	; float* m +8, int nRighe +12, int nColonne +16, float* risultato +20
+
+	xor esi,esi
+	ciclo_righe_TRA:
+		cmp esi,[ebp+12]
+		jge fine_ciclo_righe_TRA
+
+		mov edx,0
+		mov ebx,8
+		mov eax,[ebp+16]
+		div ebx
+		mov ebx,eax ; in ebx = nCol/8
+
+		xor edi,edi
+		ciclo_quoziente_TRA:
+			cmp edi,ebx
+			jge fine_ciclo_quoziente_TRA
+
+			mov edx,0
+			mov eax,2
+			mul edi
+			mov edi,eax
+
+			mov edx,0
+			mov eax,[ebp+16]
+			mul dword[quattro]
+			mul esi
+			mov ecx,eax ; ecx = eax = nCol*4*esi
+			mov edx,0
+			mov eax,16
+			mul edi
+			add eax,ecx ; eax = nCol*4*esi + edi*16 [esi indice riga, edi indice colonna]
+			mov edx,[ebp+8]
+			movups xmm0,[edx+eax]
+
+			add edi,1
+			mov edx,0
+			mov eax,16
+			mul edi
+			add eax,ecx
+			mov edx,[ebp+8]
+			movups xmm1,[edx+eax]
+			; in xmm0 e xmm1 ho i primi 8 elementi della riga
+
+			sub edi,1
+
+			mov edx,0
+			mov eax,4
+			mul edi
+			mov edi,eax ; moltiplico edi * 4 per andare a riempire la riga giusta
+
+			movups xmm2,xmm0
+			movups xmm3,xmm0
+			movups xmm4,xmm0
+
+			movups xmm5,xmm1
+			movups xmm6,xmm1
+			movups xmm7,xmm1
+
+			shufps xmm2,xmm0,1
+			shufps xmm3,xmm0,2
+			shufps xmm4,xmm0,3
+
+			shufps xmm5,xmm1,1
+			shufps xmm6,xmm1,2
+			shufps xmm7,xmm1,3
+			; in ogni registro nei primi 32 bit ho gli elementi della colonna della trasposta
+
+			mov edx,0
+			mov eax,4
+			mul esi
+			mov ecx,eax ; ecx = esi*4
+
+			mov edx,0
+			mov eax,[ebp+12]
+			mul edi
+			mul dword[quattro]
+			add eax,ecx
+			mov edx,[ebp+20]
+			movss [edx+eax],xmm0			
+
+			add edi,1
+			mov edx,0
+			mov eax,[ebp+12]
+			mul edi
+			mul dword[quattro]
+			add eax,ecx
+			mov edx,[ebp+20]
+			movss [edx+eax],xmm2
+			
+			add edi,1
+			mov edx,0
+			mov eax,[ebp+12]
+			mul edi
+			mul dword[quattro]
+			add eax,ecx
+			mov edx,[ebp+20]
+			movss [edx+eax],xmm3
+
+			add edi,1
+			mov edx,0
+			mov eax,[ebp+12]
+			mul edi
+			mul dword[quattro]
+			add eax,ecx
+			mov edx,[ebp+20]
+			movss [edx+eax],xmm4
+
+			add edi,1
+			mov edx,0
+			mov eax,[ebp+12]
+			mul edi
+			mul dword[quattro]
+			add eax,ecx
+			mov edx,[ebp+20]
+			movss [edx+eax],xmm1
+
+			add edi,1
+			mov edx,0
+			mov eax,[ebp+12]
+			mul edi
+			mul dword[quattro]
+			add eax,ecx
+			mov edx,[ebp+20]
+			movss [edx+eax],xmm5
+
+			add edi,1
+			mov edx,0
+			mov eax,[ebp+12]
+			mul edi
+			mul dword[quattro]
+			add eax,ecx
+			mov edx,[ebp+20]
+			movss [edx+eax],xmm6
+
+			add edi,1
+			mov edx,0
+			mov eax,[ebp+12]
+			mul edi
+			mul dword[quattro]
+			add eax,ecx
+			mov edx,[ebp+20]
+			movss [edx+eax],xmm7
+
+			sub edi,7
+
+			mov edx,0
+			mov ecx,8
+			mov eax,edi
+			div ecx
+			mov edi,eax
+
+			add edi,1
+			jmp ciclo_quoziente_TRA
+		
+		fine_ciclo_quoziente_TRA:
+		mov edx,0
+		mov eax,8
+		mul edi
+
+		ciclo_resto_TRA:
+			cmp edi,[ebp+16]
+			jge fine_ciclo_TRA
+			
+			mov edx,0
+			mov eax,[ebp+16]
+			mul dword[quattro]
+			mul esi
+			mov ecx,eax ; ecx = eax = nCol*4*esi
+			mov edx,0
+			mov eax,4
+			mul edi
+			add eax,ecx ; eax = nCol*4*esi + edi*16 [esi indice riga, edi indice colonna]
+			mov edx,[ebp+8]
+			movss xmm0,[edx+eax]
+
+			mov edx,0
+			mov eax,4
+			mul esi
+			mov ecx,eax ; ecx = esi*4
+
+			mov edx,0
+			mov eax,[ebp+12]
+			mul edi
+			mul dword[quattro]
+			add eax,ecx
+			mov edx,[ebp+20]
+			movss [edx+eax],xmm0
+
+			add edi,1
+			jmp ciclo_resto_TRA
+
+		fine_ciclo_TRA:
+		
+		add esi,1
+		jmp ciclo_righe_TRA
+
+	fine_ciclo_righe_TRA:
 	; ------------------------------------------------------------
 	; Sequenza di uscita dalla funzione
 	; ------------------------------------------------------------
@@ -130,7 +330,6 @@ prova:
 	mov	esp, ebp							; ripristina lo Stack Pointer
 	pop	ebp									; ripristina il Base Pointer
 	ret										; torna alla funzione C chiamante
-
 
 
 prodMatr_ass:
@@ -146,10 +345,576 @@ prodMatr_ass:
 	; legge i parametri dal Record di Attivazione corrente
 	; ------------------------------------------------------------
 	
+	; float* m1 +8, int nRighe1 +12, int nColonne1 +16, float* m2 +20, int nRighe2 +24, int nColonne2 +28, float* risultato +32
+
+	mov eax, [ebp+16]
+	cmp eax, [ebp+24]
+	jne fine_prodMatrici_ass_PM
+
+	mov edx,0
+	mov eax,[ebp+12]
+	div dword[quattro]
+	mov ecx,eax
+
+	xor esi,esi
+	ciclo_quoziente_righe1_PM:
+		cmp esi, ecx
+		jge fine_ciclo_quoziente_righe1_PM
+
+		push ecx
+
+		mov edx,0
+		mov eax,4
+		mul esi
+		mov esi,eax
+
+		xor edi,edi
+		ciclo_colonne_1_PM:
+			cmp edi, [ebp+28]
+			jge fine_ciclo_colonne_1_PM
+
+			mov edx,0
+			mov eax, [ebp+16]
+			div dword[quattro]
+			mov ecx, eax ; ecx = nCol1/4
+
+			xorps xmm7,xmm7
+
+			xor ebx,ebx
+			ciclo_quoziente_1_PM:
+				cmp ebx,ecx
+				jge fine_ciclo_quoziente_1_PM
+
+				mov edx,0
+				mov eax,4
+				mul ebx
+				mov ebx,eax
+
+				push ecx
+				mov edx,0
+				mov eax,4
+				mul dword[ebp+28]
+				mul ebx
+				mov ecx,eax
+				mov edx,0
+				mov eax,4
+				mul edi
+				add eax,ecx
+				pop ecx
+				mov edx,[ebp+20]
+				movss xmm1, [edx+eax]
+				shufps xmm1,xmm1,0
+
+				push ecx
+				add ebx,1
+				mov edx,0
+				mov eax,4
+				mul dword[ebp+28]
+				mul ebx
+				mov ecx,eax
+				mov edx,0
+				mov eax,4
+				mul edi
+				add eax,ecx
+				pop ecx
+				mov edx,[ebp+20]
+				movss xmm2, [edx+eax]
+				shufps xmm2,xmm2,0
+
+				push ecx
+				add ebx,1
+				mov edx,0
+				mov eax,4
+				mul dword[ebp+28]
+				mul ebx
+				mov ecx,eax
+				mov edx,0
+				mov eax,4
+				mul edi
+				add eax,ecx
+				pop ecx
+				mov edx,[ebp+20]
+				movss xmm3, [edx+eax]
+				shufps xmm3,xmm3,0
+
+				push ecx
+				add ebx,1
+				mov edx,0
+				mov eax,4
+				mul dword[ebp+28]
+				mul ebx
+				mov ecx,eax
+				mov edx,0
+				mov eax,4
+				mul edi
+				add eax,ecx
+				pop ecx
+				mov edx,[ebp+20]
+				movss xmm4, [edx+eax]
+				shufps xmm4,xmm4,0
+
+				shufps xmm1,xmm2,0
+				shufps xmm3,xmm4,0
+				shufps xmm1,xmm3,136
+				; in xmm1 ho la colonna della seconda matrice
+
+				sub ebx,3
+				mov edx,0
+				mov eax,ebx
+				div dword[quattro]
+				mov ebx,eax
+
+				push ecx
+				mov edx,0
+				mov eax,4
+				mul dword[ebp+16]
+				mul esi
+				mov ecx, eax
+				mov edx,0
+				mov eax, 16
+				mul ebx
+				add eax,ecx
+				pop ecx
+				mov edx,[ebp+8]
+				movups xmm0, [edx+eax]
+
+				push ecx
+				add esi,1
+				mov edx,0
+				mov eax,4
+				mul dword[ebp+16]
+				mul esi
+				mov ecx, eax
+				mov edx,0
+				mov eax, 16
+				mul ebx
+				add eax,ecx
+				pop ecx
+				mov edx,[ebp+8]
+				movups xmm2, [edx+eax]
+
+				push ecx
+				add esi,1
+				mov edx,0
+				mov eax,4
+				mul dword[ebp+16]
+				mul esi
+				mov ecx, eax
+				mov edx,0
+				mov eax, 16
+				mul ebx
+				add eax,ecx
+				pop ecx
+				mov edx,[ebp+8]
+				movups xmm3, [edx+eax]
+
+				push ecx
+				add esi,1
+				mov edx,0
+				mov eax,4
+				mul dword[ebp+16]
+				mul esi
+				mov ecx, eax
+				mov edx,0
+				mov eax, 16
+				mul ebx
+				add eax,ecx
+				pop ecx
+				mov edx,[ebp+8]
+				movups xmm4, [edx+eax]
+
+				sub esi,3
+
+				; ho xmm0,2,3,4 -> 4 elementi delle 4 righe di m1
+				; ho xmm1 -> 4 elementi della colonna di m2
+
+				mulps xmm0,xmm1
+				mulps xmm2,xmm1
+				mulps xmm3,xmm1
+				mulps xmm4,xmm1
+
+				haddps xmm0,xmm0
+				haddps xmm0,xmm0
+
+				haddps xmm2,xmm2
+				haddps xmm2,xmm2
+
+				haddps xmm3,xmm3
+				haddps xmm3,xmm3
+
+				haddps xmm4,xmm4
+				haddps xmm4,xmm4
+
+				shufps xmm0,xmm2,0
+				shufps xmm3,xmm4,0
+				shufps xmm0,xmm3,136
+
+				addps xmm7,xmm0
+
+				add ebx,1
+				jmp ciclo_quoziente_1_PM
+
+			fine_ciclo_quoziente_1_PM:
+
+			mov edx,0
+			mov eax,4
+			mul ebx
+			mov ebx,eax
+
+			ciclo_resto_1_PM:
+				cmp ebx,[ebp+16]
+				jge inserisco_in_memoria_PM
+
+				mov edx,0
+				mov eax,ebx
+				mul dword[ebp+28]
+				add eax,edi
+				mul dword[quattro]
+				; eax = (ebx*nCol2 + edi)*4
+				mov edx,[ebp+20]
+				movss xmm1, [edx+eax]
+				; ho caricato in xmm1 l'elemento della seconda matrice
+
+				mov edx,0
+				mov eax, [ebp+16]
+				mul esi
+				add eax,ebx
+				mul dword[quattro]
+				mov edx,[ebp+8]
+				movss xmm0, [edx+eax]
+
+				add esi,1
+				mov edx,0
+				mov eax, [ebp+16]
+				mul esi
+				add eax,ebx
+				mul dword[quattro]
+				mov edx,[ebp+8]
+				movss xmm2, [edx+eax]
+
+				add esi,1
+				mov edx,0
+				mov eax, [ebp+16]
+				mul esi
+				add eax,ebx
+				mul dword[quattro]
+				mov edx,[ebp+8]
+				movss xmm3, [edx+eax]
+
+				add esi,1
+				mov edx,0
+				mov eax, [ebp+16]
+				mul esi
+				add eax,ebx
+				mul dword[quattro]
+				mov edx,[ebp+8]
+				movss xmm4, [edx+eax]
+				; nei primi 32 bit di xmm0,2,3,4 ho caricato gli elementi delle righe
+
+				sub esi,3
+
+				mulss xmm0,xmm1
+				mulss xmm2,xmm1
+				mulss xmm3,xmm1
+				mulss xmm4,xmm1
+
+				shufps xmm0,xmm2,0
+				shufps xmm3,xmm4,0
+				shufps xmm0,xmm3,136
+
+				addps xmm7,xmm0
+
+				add ebx,1
+				jmp ciclo_resto_1_PM
+				
+			inserisco_in_memoria_PM:
+			
+			;movups [xmmTMP],xmm7
+			;push dword[xmmTMP+12]
+			;push dword[xmmTMP+8]
+			;push dword[xmmTMP+4]
+			;push dword[xmmTMP]
+			;push stampaXMM
+			;call printf
+			;pop dword[xmmTMP]
+			;pop dword[xmmTMP+12]
+			;pop dword[xmmTMP+8]
+			;pop dword[xmmTMP+4]
+			;pop dword[xmmTMP]
+			
+			mov edx,0
+			mov eax,[ebp+28]
+			mul esi
+			add eax,edi
+			mov edx,0
+			mul dword[quattro]
+			mov edx,[ebp+32]
+			movss [edx+eax],xmm7
+			
+			movups xmm0,xmm7
+			shufps xmm0,xmm0,85
+			add esi,1
+			mov edx,0
+			mov eax,[ebp+28]
+			mul esi
+			add eax,edi
+			mov edx,0
+			mul dword[quattro]
+			mov edx,[ebp+32]
+			movss [edx+eax],xmm0
+
+			movups xmm1,xmm7
+			shufps xmm1,xmm1,170
+			add esi,1
+			mov edx,0
+			mov eax,[ebp+28]
+			mul esi
+			add eax,edi
+			mov edx,0
+			mul dword[quattro]
+			mov edx,[ebp+32]
+			movss [edx+eax],xmm1
+
+			movups xmm2,xmm7
+			shufps xmm2,xmm2,255
+			add esi,1
+			mov edx,0
+			mov eax,[ebp+28]
+			mul esi
+			add eax,edi
+			mul dword[quattro]
+			mov edx,[ebp+32]
+			movss [edx+eax],xmm2
+
+			sub esi,3
+
+			add edi,1
+			jmp ciclo_colonne_1_PM
+
+		fine_ciclo_colonne_1_PM:
+
+
+		mov edx,0
+		mov eax,esi
+		div dword[quattro]
+		mov esi,eax
+
+		pop ecx
+		add esi,1
+		jmp ciclo_quoziente_righe1_PM
+
+	fine_ciclo_quoziente_righe1_PM:
 	
+	; abbiamo analizzato le righe a 4 alla volta ora dobbiamo calcolare 1 alla volta
+
+	mov edx,0
+	mov eax,4
+	mul esi
+	mov esi,eax ; ottengo in esi la riga da analizzare
+
+	ciclo_resto_righe1_PM:
+		cmp esi,[ebp+12]
+		jge fine_prodMatrici_ass_PM
+
+		xor edi,edi
+		ciclo_colonne_2_PM:
+			cmp edi, [ebp+28]
+			jge fine_ciclo_colonne_2_PM
+
+			mov edx,0
+			mov eax, [ebp+16]
+			div dword[quattro]
+			mov ecx, eax ; ecx = nCol1/4
+
+			xorps xmm7,xmm7
+
+			xor ebx,ebx
+			ciclo_quoziente_2_PM:
+				cmp ebx,ecx
+				jge fine_ciclo_quoziente_2_PM
+
+				mov edx,0
+				mov eax,4
+				mul ebx
+				mov ebx,eax
+
+				push ecx
+				mov edx,0
+				mov eax,4
+				mul dword[ebp+28]
+				mul ebx	
+				mov ecx,eax	; in ecx salvo ebx*nCol2*4byte (indiceRiga*ElementiColonna*4byte)
+				mov edx,0
+				mov eax,4
+				mul edi
+				add eax,ecx ; in eax ho eax + edi*4, dove edi è l'indice colonna sulla seconda matrice
+				pop ecx
+				mov edx,[ebp+20]
+				movss xmm1, [edx+eax]
+				shufps xmm1,xmm1,0
+				; ho preso il primo dei 4 elementi della colonna
+
+				push ecx
+				add ebx,1
+				mov edx,0
+				mov eax,4
+				mul dword[ebp+28]
+				mul ebx
+				mov ecx,eax
+				mov edx,0
+				mov eax,4
+				mul edi
+				add eax,ecx
+				pop ecx
+				mov edx,[ebp+20]
+				movss xmm2, [edx+eax]
+				shufps xmm2,xmm2,0
+				; prendo anche il secondo
+
+				push ecx
+				add ebx,1
+				mov edx,0
+				mov eax,4
+				mul dword[ebp+28]
+				mul ebx
+				mov ecx,eax
+				mov edx,0
+				mov eax,4
+				mul edi
+				add eax,ecx
+				pop ecx
+				mov edx,[ebp+20]
+				movss xmm3, [edx+eax]
+				shufps xmm3,xmm3,0
+				; terzo
+
+				push ecx
+				add ebx,1
+				mov edx,0
+				mov eax,4
+				mul dword[ebp+28]
+				mul ebx
+				mov ecx,eax
+				mov edx,0
+				mov eax,4
+				mul edi
+				add eax,ecx
+				pop ecx
+				mov edx,[ebp+20]
+				movss xmm4, [edx+eax]
+				shufps xmm4,xmm4,0
+				; e quarto
+
+				shufps xmm1,xmm2,0
+				shufps xmm3,xmm4,0
+				shufps xmm1,xmm3,136
+				; in xmm1 ho la colonna della seconda matrice
+
+				sub ebx,3
+				mov edx,0
+				mov eax,ebx
+				div dword[quattro]
+				mov ebx,eax
+				; sottraggo 3 e divido per 4 per tornare al valore originario
+
+				push ecx
+				mov edx,0
+				mov eax,4
+				mul dword[ebp+16]
+				mul esi
+				mov ecx, eax
+				mov edx,0
+				mov eax, 16
+				mul ebx
+				add eax,ecx
+				pop ecx
+				mov edx,[ebp+8]
+				movups xmm0, [edx+eax] ; carico in xmm0 4 elementi di una riga
+
+				; ho xmm0 -> 4 elementi delle 4 righe di m1
+				; ho xmm1 -> 4 elementi della colonna di m2
+
+				mulps xmm0,xmm1
+
+				haddps xmm0,xmm0
+				haddps xmm0,xmm0
+
+				addss xmm7,xmm0 ; sommo in xmm7 il contributo
+
+				add ebx,1
+				jmp ciclo_quoziente_2_PM
+
+			fine_ciclo_quoziente_2_PM:
+
+			mov edx,0
+			mov eax,4
+			mul ebx
+			mov ebx,eax
+
+			ciclo_resto_2_PM:
+				cmp ebx,[ebp+16]
+				jge inserisco_in_memoria_2_PM
+
+				mov edx,0
+				mov eax,ebx
+				mul dword[ebp+28]
+				add eax,edi
+				mul dword[quattro]
+				; eax = (ebx*nCol2 + edi)*4
+				mov edx,[ebp+20]
+				movss xmm1, [edx+eax]
+				; ho caricato in xmm1 l'elemento della seconda matrice
+
+				mov edx,0
+				mov eax, [ebp+16]
+				mul esi
+				add eax,ebx
+				mul dword[quattro]
+				mov edx,[ebp+8]
+				movss xmm0, [edx+eax]
+				; nei primi 32 bit di xmm0 ho caricato l' elemento della righa
+
+				mulss xmm0,xmm1
+
+				addss xmm7,xmm0
+
+				add ebx,1
+				jmp ciclo_resto_2_PM
+				
+			inserisco_in_memoria_2_PM:
+			
+			;movups [xmmTMP],xmm7
+			;push dword[xmmTMP+12]
+			;push dword[xmmTMP+8]
+			;push dword[xmmTMP+4]
+			;push dword[xmmTMP]
+			;push stampaXMM
+			;call printf
+			;pop dword[xmmTMP]
+			;pop dword[xmmTMP+12]
+			;pop dword[xmmTMP+8]
+			;pop dword[xmmTMP+4]
+			;pop dword[xmmTMP]
+			
+			mov edx,0
+			mov eax,[ebp+28]
+			mul esi
+			add eax,edi
+			mov edx,0
+			mul dword[quattro]
+			mov edx,[ebp+32]
+			movss [edx+eax],xmm7
+			
+			add edi,1
+			jmp ciclo_colonne_2_PM
+
+		fine_ciclo_colonne_2_PM:
+
+		add esi,1
+		jmp ciclo_resto_righe1_PM
+
 	
-	
-	
+	fine_prodMatrici_ass_PM:
 	; ------------------------------------------------------------
 	; Sequenza di uscita dalla funzione
 	; ------------------------------------------------------------

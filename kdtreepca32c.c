@@ -211,13 +211,15 @@ void save_data(char* filename, void* X, int n, int k) {
 
 
 // PROCEDURE ASSEMBLY
-extern void prova(params* input);
 extern void calcolaNorma_ass(float* arr, int length, float* norma);
 extern void prodMatrVett_ass(float* m, float* v, int nRighe, int nColonne, int lengthVettore, float* risultato);
 extern void prodScalare_ass(float* v1,int dim1,float* v2,int dim2,float* rs);
 extern void divisioneVettoreScalare_ass(float* v, float s, int dim, float* risultato);
 extern void sottrazioneMatrici_ass(float* m1, float* m2, int nRighe1, int nColonne1, int nRighe2, int nColonne2, float* risultato);
 extern void distanzaEuclidea_ass(float* P,float* Q, int dimen, float* dist);
+extern void prodMatr_ass(float* m1, int nRighe1, int nColonne1, float* m2, int nRighe2, int nColonne2, float* risultato);
+extern void trasponi_ass(float* m, int nRighe, int nColonne, float* risultato);
+
 
 
 void stampaMatrice(float* m, int r, int c){
@@ -403,8 +405,9 @@ void nipals(params *input){
         float t,t1;
         float r;
         do{
-            trasponi(input->ds, input->n, input->k, input->dsTras);
-            
+            //trasponi(input->ds, input->n, input->k, input->dsTras);
+            trasponi_ass(input->ds, input->n, input->k, input->dsTras);
+
             //prodScalare(input->u, input->n, input->u, input->n, &t);
             prodScalare_ass(input->u, input->n, input->u, input->n, &t);
 
@@ -442,7 +445,8 @@ void nipals(params *input){
             input->V[j*input->h+i]=input->v[j];
         }
 
-        prodMatrici(input->u, input->n, 1, input->v, 1, input->k, input->dsTras);
+        //prodMatrici(input->u, input->n, 1, input->v, 1, input->k, input->dsTras);
+        prodMatr_ass(input->u, input->n, 1, input->v, 1, input->k, input->dsTras);
 
         //sottrazioneMatrici(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
         sottrazioneMatrici_ass(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
@@ -452,7 +456,6 @@ void nipals(params *input){
 
 void pca(params* input) {
     // Codificare qui l'algoritmo PCA
-    //prova(input);
     // Calcola le matrici U e V
     nipals(input);
 }
@@ -629,10 +632,6 @@ KDTREE* buildTree(float* dataset,int nElem, int livello, int col, params *input)
     curr->figlioSx = buildTree(datasetMin, dimMin, livello+1, col, input);
     curr->figlioDx = buildTree(datasetMagg, dimMagg, livello+1, col, input);
 
-  //  printf("%d \n", curr.figlioSx->indP);
-
-    //KDTREE* k= &curr;
-
     return curr;
 }
 
@@ -641,8 +640,6 @@ void kdtree(params* input) {
     // -------------------------------------------------
     // Codificare qui l'algoritmo di costruzione
     // -------------------------------------------------
-
-    //stampaMatrice(input->U, input->n, input->h);
 
     if(input->h > 0){
         input->kdtreeRoot= buildTree(input->U, input->n, 0, input->h, input);
@@ -681,43 +678,31 @@ void distance( float* querySet, int nColonne, int indQ, KDTREE *nodo, params* in
     }
     //distanzaEuclidea(input->Point, input->Qoint, nColonne, dist);
     distanzaEuclidea_ass(input->Point, input->Qoint, nColonne, dist);
-
-//printf("DISTANZA PRIMA puntoDS %d - puntoQS %d : %.2f\n",nodo->indP, indQ, dist);
 }
 
 
 void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int indQ, params* input){
     float dist;
-//printf("DISTANZA DOPO puntoDS %d - puntoQS %d : %.2f\n\n",n->indP, indQ, dist);
     distance(querySet, nColonne, indQ, n, input, &dist);
-    if( dist > input->r){
-        ;
-        //printf("indQ (%d) no inters.\n",indQ);
-        //input->pQA[input->nQA*nColonne] = 'e';
-    }else{
-        //printf("Intersezione c'è\n");
+    if( dist <= input->r){
         int i;
 
         for(i=0; i<nColonne; i++){
             //input-> Point[i]= dataSet[n->indP*nColonne+ i];
             input-> Qoint[i]= querySet[indQ*nColonne+ i];
-            //printf("Qoint inserito\n");
         }
 
 
         //distanzaEuclidea(n->P, input-> Qoint, nColonne, &dist);
         distanzaEuclidea_ass(n->P, input-> Qoint, nColonne, &dist);
-        //printf("DISTANZA DOPO puntoDS %d - puntoQS %d : %.2f\n\n",n->indP, indQ, dist);
 
         if(  dist <= input->r ){
-           // printf("indQ (%d) c'è inters.\n", indQ);
             
             input->QA[input->nQA]=indQ;
             
             input->pQA[input->nQA] = n->P;
             
             input->nQA+=1;
-            //printf("valore inserito\n");
         }
         if( n->figlioSx != NULL){
             ricercaRange(dataSet, querySet, nColonne, n->figlioSx, indQ, input);
@@ -745,8 +730,8 @@ void range_query(params* input) {
         centraMediaQS(input);
 
         
-        prodMatrici(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
-    
+        //prodMatrici(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
+        prodMatr_ass(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
 
     // Calcola il risultato come una matrice di nQA coppie di interi
     // (id_query, id_vicino)
@@ -952,37 +937,50 @@ int main(int argc, char** argv) {
     input-> vetTmp = (int*) malloc(sizeof(int)*input->n);
 
 
-
-printf("\nCHIAMATA PROCEDURA ASS\n");
-    int nRighe=7, nColonne=9;
-    float* v = (float*) malloc(sizeof(float)*nColonne*nRighe);
-    float* m = (float*) malloc(sizeof(float)*nColonne*nRighe);
-    float scalare = 2.3;
-
-    for(i=0; i<nRighe; i+=1){
-        for(j=0; j<nColonne; j+=1){
-        v[i*nColonne+j]= j+i * scalare;
-        m[i*nColonne+j]= j-1 / (scalare-1);
+/*
+printf("\n**********************************\n");
+    int nRighe1=4, nColonne1=3;
+    int nRighe2=16, nColonne2=16;
+    float* v = (float*) malloc(sizeof(float)*nColonne1*nRighe1);
+    float* m = (float*) malloc(sizeof(float)*nColonne2*nRighe2);
+    float scalare = 1.0;
+    
+    for(i=0; i<nRighe1; i+=1){
+        for(j=0; j<nColonne1; j+=1){
+            v[i*nColonne1+j]= j;
         }
     }
-
-    stampaMatrice(v,nRighe,nColonne);
-    stampaMatrice(m,nRighe,nColonne);
-    printf("\n");
-
-    float* rs = (float*) malloc(sizeof(float)*nColonne*nRighe);
-    float* rs_2 = (float*) malloc(sizeof(float)*nColonne*nRighe);
+    for(i=0; i<nRighe2; i+=1){
+        for(j=0; j<nColonne2; j+=1){
+            m[i*nColonne2+j]= j+i;
+        }
+    }
     
-    sottrazioneMatrici(v, m, nRighe, nColonne, nRighe, nColonne, rs);
-    sottrazioneMatrici(v,m, nRighe, nColonne, nRighe, nColonne, rs_2);
+    printf("V:[%d x %d]",nRighe1,nColonne1);
+    stampaMatrice(v,nRighe1,nColonne1);
+    //printf("\nM:[%d x %d]",nRighe2,nColonne2);
+    //stampaMatrice(m,nRighe2,nColonne2);
+    //printf("\n");
 
-    printf("\n");    
-    printf("C:\n");
-    stampaMatrice(rs,nRighe,nColonne);
-    printf("\nASSEMBLY\n");
-    stampaMatrice(rs_2, nRighe, nColonne);
-printf("FINE PROCEDURA.\n");
+    float* rs = (float*) malloc(sizeof(float)*nRighe1*nColonne1);
+    float* rs_2 = (float*) malloc(sizeof(float)*nRighe1*nColonne1);
+    
+    //printf("\n");    
+    //t = clock();
+    trasponi(v,nRighe1,nColonne1,rs);
+    //t = clock() - t;
+    //time = ((float)t)/CLOCKS_PER_SEC;
+    printf("C: %.5f\n",time);
+    stampaMatrice(rs,nColonne1, nRighe1);
 
+    //printf("\n");
+    //t = clock();
+    trasponi_ass(v, nRighe1, nColonne1, rs_2);
+    //t = clock() - t;
+    //time = ((float)t)/CLOCKS_PER_SEC;
+    printf("ASSEMBLY: %.5f\n",time);
+    stampaMatrice(rs_2, nColonne1, nRighe1);
+printf("\n**********************************\n");*/
 
 
     //
