@@ -44,12 +44,15 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
+#include <libgen.h>
 #include <xmmintrin.h>
 
 #define	MATRIX		float*
+//#define	KDTREE		float* // modificare con il tipo di dato utilizzato
+
+
 
 typedef struct KDTREE {
-    //int indP;
     float *P;
     struct KDTREE *figlioSx;
     struct KDTREE *figlioDx;
@@ -57,8 +60,9 @@ typedef struct KDTREE {
 
  }KDTREE;
 
+
 typedef struct {
-    char* filename; //nome del file, estensione .ds per il data set, estensione .qs per l'eventuale query set
+   char* filename; //nome del file, estensione .ds per il data set, estensione .qs per l'eventuale query set
     MATRIX ds; //data set 
     MATRIX qs; //query set
     int n; //numero di punti del data set
@@ -100,6 +104,7 @@ typedef struct {
     int *QAfin;
 } params;
 
+
 /*
 * 
 *	Le funzioni sono state scritte assumento che le matrici siano memorizzate 
@@ -116,7 +121,7 @@ typedef struct {
 
 
 void* get_block(int size, int elements) { 
-    return _mm_malloc(elements*size,16); 
+    return _mm_malloc(elements*size,32); 
 }
 
 
@@ -126,7 +131,7 @@ void free_block(void* p) {
 
 
 MATRIX alloc_matrix(int rows, int cols) {
-    return (MATRIX) get_block(sizeof(double),rows*cols);
+    return (MATRIX) get_block(sizeof(float),rows*cols);
 }
 
 
@@ -197,8 +202,8 @@ void save_data(char* filename, void* X, int n, int k) {
     int i;
     fp = fopen(filename, "wb");
     if(X != NULL){
-        fwrite(&n, 4, 1, fp);
         fwrite(&k, 4, 1, fp);
+        fwrite(&n, 4, 1, fp);
         for (i = 0; i < n; i++) {
             fwrite(X, 4, k, fp);
             //printf("%i %i\n", ((int*)X)[0], ((int*)X)[1]);
@@ -209,16 +214,16 @@ void save_data(char* filename, void* X, int n, int k) {
 }
 
 
-
 // PROCEDURE ASSEMBLY
-extern void calcolaNorma_ass(float* arr, int length, float* norma);
-extern void prodMatrVett_ass(float* m, float* v, int nRighe, int nColonne, int lengthVettore, float* risultato);
-extern void prodScalare_ass(float* v1,int dim1,float* v2,int dim2,float* rs);
-extern void divisioneVettoreScalare_ass(float* v, float s, int dim, float* risultato);
-extern void sottrazioneMatrici_ass(float* m1, float* m2, int nRighe1, int nColonne1, int nRighe2, int nColonne2, float* risultato);
-extern void distanzaEuclidea_ass(float* P,float* Q, int dimen, float* dist);
-extern void prodMatr_ass(float* m1, int nRighe1, int nColonne1, float* m2, int nRighe2, int nColonne2, float* risultato);
-extern void trasponi_ass(float* m, int nRighe, int nColonne, float* risultato);
+extern void prova(float y, int x);
+extern void calcolaNorma_ass_64(float* arr, int length, float* norma);
+//extern void prodMatrVett_ass_64(float* m, float* v, int nRighe, int nColonne, int lengthVettore, float* risultato);
+//extern void prodScalare_ass_64(float* v1,int dim1,float* v2,int dim2,float* rs);
+//extern void divisioneVettoreScalare_ass_64(float* v, float s, int dim, float* risultato);
+//extern void sottrazioneMatrici_ass_64(float* m1, float* m2, int nRighe1, int nColonne1, int nRighe2, int nColonne2, float* risultato);
+//extern void distanzaEuclidea_ass_64(float* P,float* Q, int dimen, float* dist);
+//extern void prodMatr_ass_64(float* m1, int nRighe1, int nColonne1, float* m2, int nRighe2, int nColonne2, float* risultato);
+//extern void trasponi_ass_64(float* m, int nRighe, int nColonne, float* risultato);
 
 
 
@@ -386,35 +391,35 @@ void nipals(params *input){
         float t,t1;
         float r;
         do{
-            //trasponi(input->ds, input->n, input->k, input->dsTras);
-            trasponi_ass(input->ds, input->n, input->k, input->dsTras);
+            trasponi(input->ds, input->n, input->k, input->dsTras);
+            //trasponi_ass_64(input->ds, input->n, input->k, input->dsTras);
 
-            //prodScalare(input->u, input->n, input->u, input->n, &t);
-            prodScalare_ass(input->u, input->n, input->u, input->n, &t);
+            prodScalare(input->u, input->n, input->u, input->n, &t);
+            //prodScalare_ass_64(input->u, input->n, input->u, input->n, &t);
 
-            //prodMatrVett(input->dsTras, input->u, input->k, input->n, input->n, input->v);
-            prodMatrVett_ass(input->dsTras, input->u, input->k, input->n, input->n, input->v);
+            prodMatrVett(input->dsTras, input->u, input->k, input->n, input->n, input->v);
+            //prodMatrVett_ass_64(input->dsTras, input->u, input->k, input->n, input->n, input->v);
 
-            //divisioneVettoreScalare(input->v, t, input->k, input->v);
-            divisioneVettoreScalare_ass(input->v, t, input->k, input->v);
+            divisioneVettoreScalare(input->v, t, input->k, input->v);
+            //divisioneVettoreScalare_ass_64(input->v, t, input->k, input->v);
 
-            //calcolaNorma(input->v, input->k, &r);
-            calcolaNorma_ass(input->v, input->k, &r);
+            calcolaNorma(input->v, input->k, &r);
+            //calcolaNorma_ass_64(input->v, input->k, &r);
 
-            //divisioneVettoreScalare(input->v, r, input->k, input->v);
-            divisioneVettoreScalare_ass(input->v, r, input->k, input->v);
+            divisioneVettoreScalare(input->v, r, input->k, input->v);
+            //divisioneVettoreScalare_ass_64(input->v, r, input->k, input->v);
 
-            //prodMatrVett(input->ds, input->v, input->n, input->k, input->k, input->u);
-            prodMatrVett_ass(input->ds, input->v, input->n, input->k, input->k, input->u);
+            prodMatrVett(input->ds, input->v, input->n, input->k, input->k, input->u);
+            //prodMatrVett_ass_64(input->ds, input->v, input->n, input->k, input->k, input->u);
 
-            //prodScalare(input->v, input->k,input->v, input->k, &r);
-            prodScalare_ass(input->v, input->k,input->v, input->k, &r);
+            prodScalare(input->v, input->k,input->v, input->k, &r);
+            //prodScalare_ass_64(input->v, input->k,input->v, input->k, &r);
             
-            //divisioneVettoreScalare(input->u, r, input->n, input->u);
-            divisioneVettoreScalare_ass(input->u, r, input->n, input->u);
+            divisioneVettoreScalare(input->u, r, input->n, input->u);
+            //divisioneVettoreScalare_ass_64(input->u, r, input->n, input->u);
 
-            //prodScalare(input->u, input->n, input->u, input->n, &t1);
-            prodScalare_ass(input->u, input->n, input->u, input->n, &t1);
+            prodScalare(input->u, input->n, input->u, input->n, &t1);
+            //prodScalare_ass_64(input->u, input->n, input->u, input->n, &t1);
             
         }while( fabsf( t1 - t) >= soglia*t1);
  
@@ -426,11 +431,11 @@ void nipals(params *input){
             input->V[j*input->h+i]=input->v[j];
         }
 
-        //prodMatrici(input->u, input->n, 1, input->v, 1, input->k, input->dsTras);
-        prodMatr_ass(input->u, input->n, 1, input->v, 1, input->k, input->dsTras);
+        prodMatrici(input->u, input->n, 1, input->v, 1, input->k, input->dsTras);
+        //prodMatr_ass_64(input->u, input->n, 1, input->v, 1, input->k, input->dsTras);
 
-        //sottrazioneMatrici(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
-        sottrazioneMatrici_ass(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
+        sottrazioneMatrici(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
+        //sottrazioneMatrici_ass_64(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
         
         }
     }
@@ -617,17 +622,14 @@ KDTREE* buildTree(float* dataset,int nElem, int livello, int col, params *input)
 }
 
 void kdtree(params* input) {
-    
     // -------------------------------------------------
     // Codificare qui l'algoritmo di costruzione
     // -------------------------------------------------
-
     if(input->h > 0){
         input->kdtreeRoot= buildTree(input->U, input->n, 0, input->h, input);
     }else{    
         input->kdtreeRoot= buildTree(input->ds, input->n, 0, input->k, input);
     }
-    
 }
 
 
@@ -657,8 +659,8 @@ void distance( float* querySet, int nColonne, int indQ, KDTREE *nodo, params* in
         else 
             input->Point[j]= querySet[indQ * nColonne +j];        
     }
-    //distanzaEuclidea(input->Point, input->Qoint, nColonne, dist);
-    distanzaEuclidea_ass(input->Point, input->Qoint, nColonne, dist);
+    distanzaEuclidea(input->Point, input->Qoint, nColonne, dist);
+    //distanzaEuclidea_ass_64(input->Point, input->Qoint, nColonne, dist);
 }
 
 
@@ -674,8 +676,8 @@ void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int 
         }
 
 
-        //distanzaEuclidea(n->P, input-> Qoint, nColonne, &dist);
-        distanzaEuclidea_ass(n->P, input-> Qoint, nColonne, &dist);
+        distanzaEuclidea(n->P, input-> Qoint, nColonne, &dist);
+        //distanzaEuclidea_ass_64(n->P, input-> Qoint, nColonne, &dist);
 
         if(  dist <= input->r ){
             
@@ -705,14 +707,11 @@ void centraMediaQS(params* input){
 }
 
 void range_query(params* input) {
-    
     // Codificare qui l'algoritmo di ricerca
     if(input->h>0){
         centraMediaQS(input);
-
-        
-        //prodMatrici(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
-        prodMatr_ass(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
+        prodMatrici(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
+        //prodMatr_ass_64(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
 
     // Calcola il risultato come una matrice di nQA coppie di interi
     // (id_query, id_vicino)
@@ -742,9 +741,20 @@ void range_query(params* input) {
 //******************************************************************************************************************
 //******************************************************************************************************************
 
+
 int main(int argc, char** argv) {
     
+    float y = 1.2;
+    int x = 75;
+    printf("************************************\n");
+    prova(y,x);
+    printf("\n**********************************\n");
+
+
+
+
     char fname[256];
+    char* dsname;
     int i, j, k;
     clock_t t;
     float time;
@@ -760,14 +770,14 @@ int main(int argc, char** argv) {
     input->kdtreeRoot = NULL;
     input->r = -1;
     input->silent = 0;
-    input->display = 1;
+    input->display = 0;
     input->QA = NULL;
     input->nQA = 0;
     
     //
     // Visualizza la sintassi del passaggio dei parametri da riga comandi
     //
-    
+
     if (argc <= 1 && !input->silent) {
         printf("Usage: %s <data_name> [-pca <h>] [-kdtree [-rq <r>]]\n", argv[0]);
         printf("\nParameters:\n");
@@ -824,7 +834,7 @@ int main(int argc, char** argv) {
             par++;
         }
     }
-
+    
     //
     // Legge i dati e verifica la correttezza dei parametri
     //
@@ -835,6 +845,7 @@ int main(int argc, char** argv) {
     }
     
     sprintf(fname, "%s.ds", input->filename);
+    dsname = basename(strdup(input->filename));
     input->ds = load_data(fname, &input->n, &input->k);
 
     if(input->h < 0){
@@ -848,14 +859,13 @@ int main(int argc, char** argv) {
     
     if(input->r >= 0){
         sprintf(fname, "%s.qs", input->filename);
-        int k;
         input->qs = load_data(fname, &input->nq, &k);
-     
         if(input->k != k){
             printf("Data set dimensions and query set dimensions are not compatible!\n");
             exit(1);
         }
-    }  
+    }
+    
     //
     // Visualizza il valore dei parametri
     //
@@ -883,7 +893,6 @@ int main(int argc, char** argv) {
         }
     }
 
-
     //allocazione strutture dati
     input-> H= (float*) malloc(input->n*input->k*2 * sizeof(float));
     input-> U= (float*) malloc(input->n*input->h * sizeof(float));
@@ -906,6 +915,14 @@ int main(int argc, char** argv) {
     input-> vetTmp = (int*) malloc(sizeof(int)*input->n);
 
 
+
+
+
+
+
+
+
+
     //
     // Calcolo PCA
     //
@@ -915,10 +932,8 @@ int main(int argc, char** argv) {
         pca(input);
         t = clock() - t;
         time = ((float)t)/CLOCKS_PER_SEC;
-        sprintf(fname, "%s.U", input->filename);
-        save_data(fname, input->U, input->n, input->h);
-        sprintf(fname, "%s.V", input->filename);
-        save_data(fname, input->V, input->k, input->h);
+        sprintf(fname, "%s.U", dsname);
+        sprintf(fname, "%s.V", dsname);
     }else
         time = -1;
        
@@ -926,10 +941,11 @@ int main(int argc, char** argv) {
         printf("\nPCA time = %.3f secs\n", time);
     else
         printf("%.3f\n", time);
-
+    
     //
     // Costruzione K-d-Tree
     //
+    
     if(input->kdtree_enabled){
         t = clock();
         kdtree(input);
@@ -941,8 +957,6 @@ int main(int argc, char** argv) {
         printf("\nIndexing time = %.3f secs\n", time);
     else
         printf("%.3f\n", time);
-
-
 
     //
     // Range query search
@@ -964,7 +978,7 @@ int main(int argc, char** argv) {
     // Salva il risultato delle query
     // da modificare se si modifica il formato delle matrici di output
     //
-
+    
     int z;
   
     float* dataS; float* queryS;
