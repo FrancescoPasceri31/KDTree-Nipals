@@ -215,13 +215,13 @@ void save_data(char* filename, void* X, int n, int k) {
 
 
 // PROCEDURE ASSEMBLY
-extern void prova(float y, int x);
+extern void prova(float* y, float* x, float* ris);
 extern void calcolaNorma_ass_64(float* arr, int length, float* norma);
 //extern void prodMatrVett_ass_64(float* m, float* v, int nRighe, int nColonne, int lengthVettore, float* risultato);
-//extern void prodScalare_ass_64(float* v1,int dim1,float* v2,int dim2,float* rs);
-//extern void divisioneVettoreScalare_ass_64(float* v, float s, int dim, float* risultato);
+extern void prodScalare_ass_64(float* v1,int dim1,float* v2,int dim2,float* rs);
+extern void divisioneVettoreScalare_ass_64(float* v, float* s, int dim, float* risultato);
 //extern void sottrazioneMatrici_ass_64(float* m1, float* m2, int nRighe1, int nColonne1, int nRighe2, int nColonne2, float* risultato);
-//extern void distanzaEuclidea_ass_64(float* P,float* Q, int dimen, float* dist);
+extern void distanzaEuclidea_ass_64(float* P,float* Q, int dimen, float* dist);
 //extern void prodMatr_ass_64(float* m1, int nRighe1, int nColonne1, float* m2, int nRighe2, int nColonne2, float* risultato);
 //extern void trasponi_ass_64(float* m, int nRighe, int nColonne, float* risultato);
 
@@ -401,13 +401,13 @@ void nipals(params *input){
             //prodMatrVett_ass_64(input->dsTras, input->u, input->k, input->n, input->n, input->v);
 
             divisioneVettoreScalare(input->v, t, input->k, input->v);
-            //divisioneVettoreScalare_ass_64(input->v, t, input->k, input->v);
+            //divisioneVettoreScalare_ass_64(input->v, &t, input->k, input->v);
 
             calcolaNorma(input->v, input->k, &r);
             //calcolaNorma_ass_64(input->v, input->k, &r);
 
             divisioneVettoreScalare(input->v, r, input->k, input->v);
-            //divisioneVettoreScalare_ass_64(input->v, r, input->k, input->v);
+            //divisioneVettoreScalare_ass_64(input->v, &r, input->k, input->v);
 
             prodMatrVett(input->ds, input->v, input->n, input->k, input->k, input->u);
             //prodMatrVett_ass_64(input->ds, input->v, input->n, input->k, input->k, input->u);
@@ -416,7 +416,7 @@ void nipals(params *input){
             //prodScalare_ass_64(input->v, input->k,input->v, input->k, &r);
             
             divisioneVettoreScalare(input->u, r, input->n, input->u);
-            //divisioneVettoreScalare_ass_64(input->u, r, input->n, input->u);
+            //divisioneVettoreScalare_ass_64(input->u, &r, input->n, input->u);
 
             prodScalare(input->u, input->n, input->u, input->n, &t1);
             //prodScalare_ass_64(input->u, input->n, input->u, input->n, &t1);
@@ -744,11 +744,46 @@ void range_query(params* input) {
 
 int main(int argc, char** argv) {
     
-    float y = 1.2;
-    int x = 75;
-    printf("************************************\n");
-    prova(y,x);
+    int nCol1= 27,nCol2= 27;
+    int nRig1= 1,nRig2= 1;
+
+    float scalare = 2.2;
+
+    float* p = (float*)malloc(sizeof(float)*nRig1*nCol1);
+    float* p1 = (float*)malloc(sizeof(float)*nRig2*nCol2);
+
+    for(int i=0; i<nRig1; i++){
+        for(int j=0; j<nCol1;j++){
+            p[i*nCol1+j] = 5.0 + j;
+        }
+    }
+
+    for(int i=0; i<nRig2; i++){
+        for(int j=0; j<nCol2;j++){
+            p1[i*nCol1+j] = 5.0;
+        }
+    }
+
+    stampaMatrice(p,nRig1,nCol1);
+    //stampaMatrice(p1,nRig2,nCol2);
+
+    float* ris_1 = (float*)malloc(sizeof(float)*nRig1*nCol1);
+    float* ris_2 = (float*)malloc(sizeof(float)*nRig1*nCol1);
+
+    float* punt1  = (float*)malloc(sizeof(float));
+    float* punt2  = (float*)malloc(sizeof(float));
+
+    divisioneVettoreScalare(p, scalare, nCol1, ris_1);
+    divisioneVettoreScalare_ass_64(p, &scalare, nCol1, ris_2);
+
+    printf("\n************************************\n");
+    printf( "C: %.2f", 0.0 );
+    stampaMatrice(ris_1, nRig1, nCol1);
+    printf( "ASS: %.2f", 0.0 );
+    stampaMatrice(ris_2, nRig1, nCol1);
     printf("\n**********************************\n");
+
+
 
 
 
@@ -913,15 +948,6 @@ int main(int argc, char** argv) {
     }
 
     input-> vetTmp = (int*) malloc(sizeof(int)*input->n);
-
-
-
-
-
-
-
-
-
 
     //
     // Calcolo PCA
