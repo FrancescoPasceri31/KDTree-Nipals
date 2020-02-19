@@ -282,6 +282,7 @@ trasponi_ass:
 		mov edx,0
 		mov eax,8
 		mul edi
+		mov edi,eax
 
 		ciclo_resto_TRA:
 			cmp edi,[ebp+16]

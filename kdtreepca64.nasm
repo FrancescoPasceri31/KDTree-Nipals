@@ -94,6 +94,7 @@ global prova
 global calcolaNorma_ass_64
 global prodScalare_ass_64
 global distanzaEuclidea_ass_64
+global trasponi_ass_64
 global divisioneVettoreScalare_ass_64
 
 msg	db 'n:',0
@@ -137,6 +138,329 @@ prova:
 		pop		rbp					; ripristina il Base Pointer
 		ret							; torna alla funzione C chiamante
 
+trasponi_ass_64:
+	; ------------------------------------------------------------
+	; Sequenza di ingresso nella funzione
+	; ------------------------------------------------------------
+	push		rbp				; salva il Base Pointer
+	mov		rbp, rsp			; il Base Pointer punta al Record di Attivazione corrente
+	pushaq						; salva i registri generali
+
+	; ------------------------------------------------------------
+	; I parametri sono passati nei registri
+	; ------------------------------------------------------------
+
+	; float* m +8, int nRighe +12, int nColonne +16, float* risultato +20
+
+	mov r8, rdi
+	mov r9, rsi
+	mov r10, rdx
+	mov r11, rcx
+
+	xor rsi,rsi
+	ciclo_righe_TRA:
+		cmp rsi,r9
+		jge fine_ciclo_righe_TRA
+
+		mov rdx,0
+		mov rbx,16
+		mov rax,r10
+		div rbx
+		mov rbx,rax ; in rbx = nCol/16
+
+		xor rdi,rdi
+		ciclo_quoziente_TRA:
+			cmp rdi,rbx
+			jge fine_ciclo_quoziente_TRA
+
+			mov rdx,0
+			mov rax,2
+			mul rdi
+			mov rdi,rax
+
+			mov rdx,0
+			mov rax,r10
+			mul dword[quattro]
+			mul rsi
+			mov rcx,rax ; rcx = rax = nCol*4*rsi
+			mov rdx,0
+			mov rax,32
+			mul rdi
+			add rax,rcx ; rax = nCol*4*rsi + rdi*32 [esi indice riga, edi indice colonna]
+			mov rdx,r8
+			vmovups ymm0,[rdx+rax]
+
+			add rdi,1
+			mov rdx,0
+			mov rax,32
+			mul rdi
+			add rax,rcx
+			mov rdx,r8
+			vmovups ymm1,[rdx+rax]
+			; in ymm0 e ymm1 ho i primi 16 elementi della riga
+
+			sub rdi,1
+
+			mov rdx,0
+			mov rax,4
+			mul rdi
+			mov rdi,rax ; moltiplico rdi * 8 per andare a riempire la riga giusta
+
+			vmovups ymm2,ymm0
+			vmovups ymm3,ymm0
+			vmovups ymm4,ymm0
+			vmovups ymm5,ymm0
+			vmovups ymm6,ymm0
+			vmovups ymm7,ymm0
+			vmovups ymm8, ymm0
+
+			vmovups ymm9,ymm1
+			vmovups ymm10,ymm1
+			vmovups ymm11,ymm1
+			vmovups ymm12,ymm1
+			vmovups ymm13,ymm1
+			vmovups ymm14,ymm1
+			vmovups ymm15, ymm1
+
+			vshufps ymm2,ymm2,ymm0,1
+			vshufps ymm3,ymm3,ymm0,2
+			vshufps ymm4,ymm4,ymm0,3
+			vperm2f128 ymm5,ymm5,ymm5,00010001b	
+			vshufps ymm5,ymm5,ymm5,4
+			vperm2f128 ymm6,ymm6,ymm6,00010001b
+			vshufps ymm6,ymm6,ymm6,5
+			vperm2f128 ymm7,ymm7,ymm7,00010001b
+			vshufps ymm7,ymm7,ymm7,6
+			vperm2f128 ymm8,ymm8,ymm8,00010001b
+			vshufps ymm8,ymm8,ymm8,7
+
+			vshufps ymm9,ymm9,ymm1,1
+			vshufps ymm10,ymm10,ymm1,2
+			vshufps ymm11,ymm11,ymm1,3
+
+			vperm2f128 ymm12,ymm12,ymm12,00010001b
+			vperm2f128 ymm13,ymm13,ymm13,00010001b
+			vperm2f128 ymm14,ymm14,ymm14,00010001b
+			vperm2f128 ymm15,ymm15,ymm15,00010001b
+			vshufps ymm12,ymm12,ymm12,4
+			vshufps ymm13,ymm13,ymm13,5
+			vshufps ymm14,ymm14,ymm14,6
+			vshufps ymm15,ymm15,ymm15,7
+			; in ogni registro nei primi 32 bit ho gli elementi della colonna della trasposta
+
+			mov rdx,0
+			mov rax,4
+			mul rsi
+			mov rcx,rax ; rcx = rsi*8
+
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm0			
+
+			add rdi,1
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm2
+			
+			add rdi,1
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm3
+
+			add rdi,1
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm4
+
+			add rdi,1
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm5
+
+			add rdi,1
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm6
+
+			add rdi,1
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm7
+
+			add rdi,1
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm8
+
+			add rdi,1
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm1
+
+			add rdi,1
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm9
+
+			add rdi,1
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm10
+
+			add rdi,1
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm11
+
+			add rdi,1
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm12
+
+			add rdi,1
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm13
+
+			add rdi,1
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm14
+
+			add rdi,1
+			mov rdx,0
+			mov rax,r9
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			vmovss [rdx+rax],xmm15
+
+			sub rdi,15
+
+			mov rdx,0
+			mov rcx,8
+			mov rax,rdi
+			div rcx
+			mov rdi,rax
+
+			add rdi,1
+			jmp ciclo_quoziente_TRA
+		
+		fine_ciclo_quoziente_TRA:
+		mov rdx,0
+		mov rax,8
+		mul rdi
+		mov rdi,rax
+
+		ciclo_resto_TRA:
+			cmp rdi,r10
+			jge fine_ciclo_TRA
+			
+			mov rdx,0
+			mov rax,r10
+			mul dword[quattro]
+			mul rsi
+			mov rcx,rax ; ecx = eax = nCol*4*esi
+			mov rdx,0
+			mov rax,4
+			mul rdi
+			add rax,rcx ; eax = nCol*4*esi + edi*4 [esi indice riga, edi indice colonna]
+			mov rdx,r8
+			vmovss xmm0,[rdx+rax]
+
+			mov rdx,0
+			mov rax,4
+			mul rsi
+			mov rcx,rax ; ecx = esi*4
+
+			mov rdx,0
+			mov rax,r10
+			mul rdi
+			mul dword[quattro]
+			add rax,rcx
+			mov rdx,r11
+			movss [rdx+rax],xmm0
+
+			add rdi,1
+			jmp ciclo_resto_TRA
+
+		fine_ciclo_TRA:
+		
+		add rsi,1
+		jmp ciclo_righe_TRA
+
+	fine_ciclo_righe_TRA:
+	; ------------------------------------------------------------
+	; Sequenza di uscita dalla funzione
+	; ------------------------------------------------------------
+		
+	popaq						; ripristina i registri generali
+	mov		rsp, rbp			; ripristina lo Stack Pointer
+	pop		rbp					; ripristina il Base Pointer
+	ret							; torna alla funzione C chiamante
+
+
 divisioneVettoreScalare_ass_64:
 	; ------------------------------------------------------------
 	; Sequenza di ingresso nella funzione
@@ -178,8 +502,6 @@ divisioneVettoreScalare_ass_64:
 		vbroadcastss ymm1, [r9]
 
 		vdivps ymm0,ymm0,ymm1
-
-		;call printf
 
 		vmovups [r11+rax],ymm0
 

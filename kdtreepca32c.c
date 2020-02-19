@@ -743,7 +743,7 @@ void range_query(params* input) {
 //******************************************************************************************************************
 
 int main(int argc, char** argv) {
-    
+
     char fname[256];
     int i, j, k;
     clock_t t;

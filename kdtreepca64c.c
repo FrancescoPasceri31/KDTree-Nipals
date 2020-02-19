@@ -223,7 +223,7 @@ extern void divisioneVettoreScalare_ass_64(float* v, float* s, int dim, float* r
 //extern void sottrazioneMatrici_ass_64(float* m1, float* m2, int nRighe1, int nColonne1, int nRighe2, int nColonne2, float* risultato);
 extern void distanzaEuclidea_ass_64(float* P,float* Q, int dimen, float* dist);
 //extern void prodMatr_ass_64(float* m1, int nRighe1, int nColonne1, float* m2, int nRighe2, int nColonne2, float* risultato);
-//extern void trasponi_ass_64(float* m, int nRighe, int nColonne, float* risultato);
+extern void trasponi_ass_64(float* m, int nRighe, int nColonne, float* risultato);
 
 
 
@@ -744,8 +744,8 @@ void range_query(params* input) {
 
 int main(int argc, char** argv) {
     
-    int nCol1= 27,nCol2= 27;
-    int nRig1= 1,nRig2= 1;
+    int nCol1= 17,nCol2= 13;
+    int nRig1= 2,nRig2= 1;
 
     float scalare = 2.2;
 
@@ -773,8 +773,8 @@ int main(int argc, char** argv) {
     float* punt1  = (float*)malloc(sizeof(float));
     float* punt2  = (float*)malloc(sizeof(float));
 
-    divisioneVettoreScalare(p, scalare, nCol1, ris_1);
-    divisioneVettoreScalare_ass_64(p, &scalare, nCol1, ris_2);
+    trasponi(p, nRig1, nCol1, ris_1);
+    trasponi_ass_64(p, nRig1, nCol1, ris_2);
 
     printf("\n************************************\n");
     printf( "C: %.2f", 0.0 );
