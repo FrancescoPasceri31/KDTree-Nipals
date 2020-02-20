@@ -51,7 +51,8 @@ section .bss			; Sezione contenente dati non inizializzati
 tmp: resd 2
 count: resd 1
 xmmTMP: resd 4
-
+somma_PMV: resd 8
+ymmTMP: resd 8
 
 section .text			; Sezione contenente il codice macchina
 
@@ -90,45 +91,1805 @@ extern free_block
 ; ------------------------------------------------------------
 ; Funzione prova
 ; ------------------------------------------------------------
-global prova
 global calcolaNorma_ass_64
 global prodScalare_ass_64
 global distanzaEuclidea_ass_64
 global trasponi_ass_64
 global divisioneVettoreScalare_ass_64
+global prodMatrVett_ass_64
+global sottrazioneMatrici_ass_64
+global prodMatr_ass_64
+
 
 msg	db 'n:',0
 nl	db 10,0
 
-prova:
-		; ------------------------------------------------------------
-		; Sequenza di ingresso nella funzione
-		; ------------------------------------------------------------
-		push		rbp				; salva il Base Pointer
-		mov		rbp, rsp			; il Base Pointer punta al Record di Attivazione corrente
-		pushaq						; salva i registri generali
 
-		; ------------------------------------------------------------
-		; I parametri sono passati nei registri
-		; ------------------------------------------------------------
+prodMatr_ass_64:
+	; ------------------------------------------------------------
+	; Sequenza di ingresso nella funzione
+	; ------------------------------------------------------------
+	push		rbp				; salva il Base Pointer
+	mov		rbp, rsp			; il Base Pointer punta al Record di Attivazione corrente
+	pushaq						; salva i registri generali
+	; ------------------------------------------------------------
+	; I parametri sono passati nei registri
+	; ------------------------------------------------------------
+	
+	; float* m1 +8, int nRighe1 +12, int nColonne1 +16, float* m2 +20, int nRighe2 +24, int nColonne2 +28, float* risultato +32
+
+	mov r12, r8
+	mov r13, r9
+	mov r8, rdi
+	mov r9, rsi
+	mov r10, rdx
+	mov r11, rcx
+	mov r14, [rbp+16]
+
+	cmp r10, r12
+	jne fine_prodMatrici_ass_PM
+
+	mov rdx,0
+	mov rax, r9
+	div dword[quattro]
+	mov rcx,rax
+
+	xor rsi,rsi
+	ciclo_quoziente_righe1_PM:
+		cmp rsi, rcx
+		jge fine_ciclo_quoziente_righe1_PM
+
+		push rcx 
 		
-		; rdi = indirizzo della struct input
-		; esempio: stampa input->n e di input->k
-		; rdi contiente l'indirizzo della struttura contenente i parametri
-		; [rdi] contiene l'indirizzo della stringa con il nome del file
-		; [rdi+8] contiene l'indirizzo di partenza del data set
-		; [rdi+16] contiene l'indirizzo di partenza del query set
-		; rdi -> puntatore ad elemento
-		; rsi -> puntatore a scalare
-		; rdx -> puntatore a risultato
-		vbroadcastss ymm0, [rdi]
-		vbroadcastss ymm1, [rsi]
-		vpermilps ymm0,ymm0,0
-		vmulss xmm0,xmm0,xmm1
-		vmovss [rdx],xmm0
-		;movsx rax, dword[rdi+28]		; a 4 byte da n si trova k
-		;printi rax
+		mov rdx,0
+		mov rax,4
+		mul rsi
+		mov rsi,rax
 
+		xor rdi,rdi
+		ciclo_colonne_1_PM:
+			cmp rdi, r13
+			jge fine_ciclo_colonne_1_PM
+
+			mov rdx,0
+			mov rax, r10
+			div dword[otto]
+			mov rcx, rax ; rcx = nCol1/8
+
+			vxorps ymm7,ymm7,ymm7
+
+			xor rbx,rbx
+			ciclo_quoziente_1_PM:
+				cmp rbx,rcx
+				jge fine_ciclo_quoziente_1_PM
+
+				mov rdx,0
+				mov rax,8
+				mul rbx
+				mov rbx,rax	; moltiplico per 8 per ottenere il numero del blocco da 8 della colonna
+
+				; prendo elementi della prima colonna della seconda matrice
+				push rcx
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm1, [rdx+rax]
+				vmovss [ymmTMP],xmm1
+
+				push rcx
+				add rbx,1
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm1, [rdx+rax]
+				vmovss [ymmTMP+4], xmm1
+
+				push rcx
+				add rbx,1
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm1, [rdx+rax]
+				vmovss [ymmTMP+8], xmm1
+
+				push rcx
+				add rbx,1
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm1, [rdx+rax]
+				vmovss [ymmTMP+12], xmm1
+
+				push rcx
+				add rbx,1
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm1, [rdx+rax]
+				vmovss [ymmTMP+16], xmm1
+
+				push rcx
+				add rbx,1
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm1, [rdx+rax]
+				vmovss [ymmTMP+20], xmm1
+
+				push rcx
+				add rbx,1
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm1, [rdx+rax]
+				vmovss [ymmTMP+24], xmm1
+
+				push rcx
+				add rbx,1
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm1, [rdx+rax]
+				vmovss [ymmTMP+28], xmm1
+
+				vxorps ymm1,ymm1,ymm1
+				vmovups ymm1,[ymmTMP]
+				; in ymm1 ho la colonna della seconda matrice
+
+				sub rbx,7
+				mov rdx,0
+				mov rax,rbx
+				div dword[otto]
+				mov rbx,rax
+
+				push rcx
+				mov rdx,0
+				mov rax,4
+				mul r10
+				mul rsi
+				mov rcx, rax
+				mov rdx,0
+				mov rax, 32
+				mul rbx
+				add rax,rcx
+				pop rcx
+				mov rdx, r8
+				vmovups ymm0, [rdx+rax]
+
+				push rcx
+				add rsi,1
+				mov rdx,0
+				mov rax,4
+				mul r10
+				mul rsi
+				mov rcx, rax
+				mov rdx,0
+				mov rax, 32
+				mul rbx
+				add rax,rcx
+				pop rcx
+				mov rdx,r8
+				vmovups ymm2, [rdx+rax]
+
+				push rcx
+				add rsi,1
+				mov rdx,0
+				mov rax,4
+				mul r10
+				mul rsi
+				mov rcx, rax
+				mov rdx,0
+				mov rax, 32
+				mul rbx
+				add rax,rcx
+				pop rcx
+				mov rdx,r8
+				vmovups ymm3, [rdx+rax]
+
+				push rcx
+				add rsi,1
+				mov rdx,0
+				mov rax,4
+				mul r10
+				mul rsi
+				mov rcx, rax
+				mov rdx,0
+				mov rax, 32
+				mul rbx
+				add rax,rcx
+				pop rcx
+				mov rdx,r8
+				vmovups ymm4, [rdx+rax]
+
+				sub rsi,3
+
+				; ho ymm0,2,3,4 -> 8 elementi delle 4 righe di m1
+				; ho ymm1 -> 8 elementi della colonna di m2
+
+				vmulps ymm0,ymm0,ymm1
+				vmulps ymm2,ymm2,ymm1
+				vmulps ymm3,ymm3,ymm1
+				vmulps ymm4,ymm4,ymm1
+
+				vhaddps ymm0,ymm0,ymm0
+				vhaddps ymm0,ymm0,ymm0
+
+				vhaddps ymm2,ymm2,ymm2
+				vhaddps ymm2,ymm2,ymm2
+
+
+				vhaddps ymm3,ymm3,ymm3
+				vhaddps ymm3,ymm3,ymm3
+
+				vhaddps ymm4,ymm4,ymm4
+				vhaddps ymm4,ymm4,ymm4
+
+				vperm2f128 ymm8,ymm0,ymm0,00000001b
+				vperm2f128 ymm9,ymm2,ymm2,00000001b
+				vperm2f128 ymm10,ymm3,ymm3,00000001b
+				vperm2f128 ymm11,ymm4,ymm4,00000001b
+				; inserisco la parte alta di ymm0 in ymm8 e per gli altri
+
+				vaddss xmm0,xmm0,xmm8
+				vaddss xmm2,xmm2,xmm9
+				vaddss xmm3,xmm3,xmm10
+				vaddss xmm4,xmm4,xmm11
+
+				vmovss [xmmTMP],xmm0
+				vmovss [xmmTMP+4],xmm2
+				vmovss [xmmTMP+8],xmm3
+				vmovss [xmmTMP+12],xmm4
+
+				vmovups xmm0,[xmmTMP]
+
+				vaddps xmm7,xmm7,xmm0
+
+				add rbx,1
+				jmp ciclo_quoziente_1_PM
+
+			fine_ciclo_quoziente_1_PM:
+
+			mov rdx,0
+			mov rax,8
+			mul rbx
+			mov rbx,rax
+
+			ciclo_resto_1_PM:
+				cmp rbx,r10
+				jge inserisco_in_memoria_PM
+
+				mov rdx,0
+				mov rax,rbx
+				mul r13
+				add rax,rdi
+				mul dword[quattro]
+				; rax = (rbx*nCol2 + rdi)*4
+				mov rdx, r11
+				vmovss xmm1, [rdx+rax]
+				; ho caricato in xmm1 l'elemento della seconda matrice
+
+				mov rdx,0
+				mov rax, r10
+				mul rsi
+				add rax,rbx
+				mul dword[quattro]
+				mov rdx, r8
+				vmovss xmm0, [rdx+rax]
+
+				add rsi,1
+				mov rdx,0
+				mov rax, r10
+				mul rsi
+				add rax,rbx
+				mul dword[quattro]
+				mov rdx,r8
+				vmovss xmm2, [rdx+rax]
+
+				add rsi,1
+				mov rdx,0
+				mov rax, r10
+				mul rsi
+				add rax,rbx
+				mul dword[quattro]
+				mov rdx, r8
+				vmovss xmm3, [rdx+rax]
+
+				add rsi,1
+				mov rdx,0
+				mov rax, r10
+				mul rsi
+				add rax,rbx
+				mul dword[quattro]
+				mov rdx,r8
+				vmovss xmm4, [rdx+rax]
+				; nei primi 32 bit di xmm0,2,3,4 ho caricato gli elementi delle righe
+
+				sub rsi,3
+
+				vmulss xmm0,xmm0,xmm1
+				vmulss xmm2,xmm2,xmm1
+				vmulss xmm3,xmm3,xmm1
+				vmulss xmm4,xmm4,xmm1
+
+				vshufps xmm0, xmm0,xmm2,00000000b ;[aabb]
+				vshufps xmm3, xmm3, xmm4, 00000000b ;[ccdd]
+
+				vshufps xmm1, xmm0, xmm3, 10001000b ;[abcd]
+
+				vaddps xmm7,xmm7,xmm1
+
+				add rbx,1
+				jmp ciclo_resto_1_PM
+				
+			inserisco_in_memoria_PM:
+			
+			mov rdx,0
+			mov rax, r13
+			mul rsi
+			add rax,rdi
+			mov rdx,0
+			mul dword[quattro]
+			mov rdx,r14
+			vmovss [rdx+rax],xmm7
+			
+			vmovups [xmmTMP],xmm7
+
+			add rsi,1
+			mov rdx,0
+			mov rax,r13
+			mul rsi
+			add rax,rdi
+			mov rdx,0
+			mul dword[quattro]
+			mov rdx,r14
+			vmovss xmm0, [xmmTMP+4]
+			vmovss [rdx+rax],xmm0
+
+			add rsi,1
+			mov rdx,0
+			mov rax,r13
+			mul rsi
+			add rax,rdi
+			mov rdx,0
+			mul dword[quattro]
+			mov rdx,r14
+			vmovss xmm1, [xmmTMP+8]
+			vmovss [rdx+rax],xmm1
+
+			add rsi,1
+			mov rdx,0
+			mov rax,r13
+			mul rsi
+			add rax,rdi
+			mul dword[quattro]
+			mov rdx,r14
+			vmovss xmm2, [xmmTMP+12]
+			vmovss [rdx+rax],xmm2
+
+			sub rsi,3
+
+			add rdi,1
+			jmp ciclo_colonne_1_PM
+
+		fine_ciclo_colonne_1_PM:
+
+
+		mov rdx,0
+		mov rax,rsi
+		div dword[quattro]
+		mov rsi,rax
+
+		pop rcx
+		add rsi,1
+		jmp ciclo_quoziente_righe1_PM
+
+	fine_ciclo_quoziente_righe1_PM:
+	
+	; abbiamo analizzato le righe a 4 alla volta ora dobbiamo calcolare 1 alla volta
+
+	mov rdx,0
+	mov rax,4
+	mul rsi
+	mov rsi,rax ; ottengo in rsi la riga da analizzare
+
+	ciclo_resto_righe1_PM:
+		cmp rsi,r9
+		jge fine_prodMatrici_ass_PM
+
+		xor rdi,rdi
+		ciclo_colonne_2_PM:
+			cmp rdi, r13
+			jge fine_ciclo_colonne_2_PM
+
+			mov rdx,0
+			mov rax, r10
+			div dword[otto]
+			mov rcx, rax ; rcx = nCol1/8
+
+			vxorps ymm9,ymm9,ymm9
+
+			xor rbx,rbx
+			ciclo_quoziente_2_PM:
+				cmp rbx,rcx
+				jge fine_ciclo_quoziente_2_PM
+
+				mov rdx,0
+				mov rax,8
+				mul rbx
+				mov rbx,rax
+				
+				; prendo elementi della prima colonna della seconda matrice
+				push rcx
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm1, [rdx+rax]
+
+				push rcx
+				add rbx,1
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm2, [rdx+rax]
+
+				push rcx
+				add rbx,1
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm3, [rdx+rax]
+
+				push rcx
+				add rbx,1
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm4, [rdx+rax]
+
+				push rcx
+				add rbx,1
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm5, [rdx+rax]
+
+				push rcx
+				add rbx,1
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm6, [rdx+rax]
+
+				push rcx
+				add rbx,1
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm7, [rdx+rax]
+
+				push rcx
+				add rbx,1
+				mov rdx,0
+				mov rax,4
+				mul r13
+				mul rbx
+				mov rcx,rax
+				mov rdx,0
+				mov rax,4
+				mul rdi
+				add rax,rcx
+				pop rcx
+				mov rdx,r11
+				vmovss xmm8, [rdx+rax]
+
+				; xmmi [x x x i]
+
+				vshufps xmm1,xmm1,xmm2,0	; b b a a
+				vshufps xmm3,xmm3,xmm4,0	; d d c c
+				vshufps xmm5,xmm5,xmm6,0	; f f e e
+				vshufps xmm7,xmm7,xmm8,0	; h h g g
+
+				vshufps xmm1,xmm1,xmm3,10001000b ; [d c b a]
+				vshufps xmm5,xmm5,xmm7,10001000b ; [h g f e]
+
+				vperm2f128 ymm1,ymm1,ymm5,00100000b	; [h g f e d c b a] 
+
+				sub rbx,7
+				mov rdx,0
+				mov rax,rbx
+				div dword[otto]
+				mov rbx,rax
+
+				push rcx
+				mov rdx,0
+				mov rax,4
+				mul r10
+				mul rsi
+				mov rcx, rax	; rcx= indRiga1*nCol1*4
+				mov rdx,0
+				mov rax, 32
+				mul rbx
+				add rax,rcx	; rax = indRiga1*nCol1*4 + indCol*32
+				pop rcx
+				mov rdx, r8
+				vmovups ymm0, [rdx+rax]
+				; ho ymm0 -> 8 elementi delle 4 righe di m1
+				; ho ymm1 -> 8 elementi della colonna di m2
+
+				vmulps ymm0,ymm0,ymm1
+
+				vhaddps ymm0,ymm0,ymm0
+				vhaddps ymm0,ymm0,ymm0
+
+				vperm2f128 ymm8,ymm0,ymm0,00000001b
+
+				vaddss xmm0,xmm0,xmm8
+
+				vaddss xmm9,xmm9,xmm0 ; sommo in xmm7 il contributo
+
+				add rbx,1
+				jmp ciclo_quoziente_2_PM
+
+			fine_ciclo_quoziente_2_PM:
+
+			mov rdx,0
+			mov rax,8
+			mul rbx
+			mov rbx,rax
+
+			ciclo_resto_2_PM:
+				cmp rbx,r10
+				jge inserisco_in_memoria_2_PM
+
+				mov rdx,0
+				mov rax,rbx
+				mul r13
+				add rax,rdi
+				mul dword[quattro]
+				; rax = (rbx*nCol2 + rdi)*4
+				mov rdx, r11
+				vmovss xmm1, [rdx+rax]
+				; ho caricato in xmm1 l'elemento della seconda matrice
+
+
+				mov rdx,0
+				mov rax, r10
+				mul rsi
+				add rax,rbx
+				mul dword[quattro]
+				mov rdx, r8
+				vmovss xmm0, [rdx+rax]
+				; nei primi 32 bit di xmm0 ho caricato l' elemento della righa
+
+				vmulss xmm0,xmm0,xmm1
+
+				vaddss xmm9,xmm9,xmm0
+
+				add rbx,1
+				jmp ciclo_resto_2_PM
+				
+			inserisco_in_memoria_2_PM:
+			
+			mov rdx,0
+			mov rax,r13
+			mul rsi
+			add rax,rdi
+			mov rdx,0
+			mul dword[quattro]
+			mov rdx,r14
+			vmovss [rdx+rax],xmm9
+			
+			add rdi,1
+			jmp ciclo_colonne_2_PM
+
+		fine_ciclo_colonne_2_PM:
+
+		add rsi,1
+		jmp ciclo_resto_righe1_PM
+
+	
+	fine_prodMatrici_ass_PM:
+	
+    ; ------------------------------------------------------------
+	; Sequenza di uscita dalla funzione
+	; ------------------------------------------------------------
+		
+	popaq						; ripristina i registri generali
+	mov		rsp, rbp			; ripristina lo Stack Pointer
+	pop		rbp					; ripristina il Base Pointer
+	ret							; torna alla funzione C chiamante
+
+
+
+sottrazioneMatrici_ass_64:
+	; ------------------------------------------------------------
+	; Sequenza di ingresso nella funzione
+	; ------------------------------------------------------------
+	push		rbp				; salva il Base Pointer
+	mov		rbp, rsp			; il Base Pointer punta al Record di Attivazione corrente
+	pushaq						; salva i registri generali
+
+	; ------------------------------------------------------------
+	; I parametri sono passati nei registri
+	; ------------------------------------------------------------
+
+	; float* m1 +8, float* m2 +12, int nRighe1 +16, int nColonne1 +20, float* risultato +32
+
+	mov r14, r8
+	mov r8,rdi
+	mov r9, rsi
+	mov r10, rdx
+	mov r11, rcx
+
+	mov rdx,0
+	mov rax, r10
+	div dword[quattro]
+	mov rdi, rax ; ho ottenuto il nRighe/4 in RDI
+
+	xor rsi,rsi
+	ciclo_esterno_1_SM:
+		cmp rsi,rdi
+		jge fine_ciclo_esterno_1_SM
+		; altrimenti prendo 4 righe alla volta
+
+		mov rdx,0
+		mov rax, r11
+		div dword[otto]	
+		mov rbx,rax	; in rbx ho nColonne/8
+
+		mov r15, rdi
+
+		mov rdx,0
+		mov rax,4
+		mul rsi
+		mov rsi,rax
+		; inserisco in RSI = RSI*4 per trovare il primo indice riga delle 4 da analizzare
+
+		xor rcx,rcx
+		ciclo_interno_1_SM:
+			cmp rcx,rbx
+			jge fine_ciclo_interno_1_SM
+
+			; in ymm0-1-2-3 mantengo la prima matrice
+			; in ymm4-5-6-7 mantengo la seconda matrice
+
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			; ho ottenuto indiceRiga*(nColonne*4 byte) + (32 byte*indiceColonna) [rsi*r11*4 + 32*ecx]
+			mov rdx, r8
+			vmovups ymm0, [rdx+rax]	; ho caricato la prima riga
+			mov rdx, r9
+			vmovups ymm4, [rdx+rax]
+
+			add rsi,1
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			mov rdx, r8
+			vmovups ymm1, [rdx+rax]
+			mov rdx, r9
+			vmovups ymm5, [rdx+rax]
+			
+			add rsi,1
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			mov rdx, r8
+			vmovups ymm2, [rdx+rax]
+			mov rdx, r9
+			vmovups ymm6, [rdx+rax]
+			
+			add rsi,1
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			mov rdx, r8
+			vmovups ymm3, [rdx+rax]
+			mov rdx, r9
+			vmovups ymm7, [rdx+rax]
+			; ho caricato le 4 righe in ymm0,ymm1,ymm2,ymm3
+			; e della seconda matrice in ymm4,5,6,7
+
+			vsubps ymm0,ymm0,ymm4
+			vsubps ymm1,ymm1,ymm5
+			vsubps ymm2,ymm2,ymm6
+			vsubps ymm3,ymm3,ymm7
+			; ho sottratto gli elementi e devo inserirli in memoria
+
+			sub rsi,3
+			mov rdx,0
+			mov rax,rsi
+			mov rsi,rax			
+
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			; ho ottenuto indiceRiga*(nColonne*4 byte) + (16 byte*indiceColonna) [esi*[ebp+20]*4 + 16*ecx]
+			mov rdx, r14
+			vmovups [rdx+rax], ymm0	; ho caricato la prima riga
+
+			add rsi,1
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi,rax
+			mov rdx,0
+			mov rax,32
+			mul rcx
+			add rax,rdi
+			mov rdx, r14
+			vmovups [rdx+rax],ymm1
+
+			add rsi,1
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi,rax
+			mov rdx,0
+			mov rax,32
+			mul rcx
+			add rax,rdi
+			mov rdx, r14
+			vmovups [rdx+rax],ymm2
+
+			add rsi,1
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi,rax
+			mov rdx,0
+			mov rax,32
+			mul rcx
+			add rax,rdi
+			mov rdx, r14
+			vmovups [rdx+rax],ymm3	
+			; ho caricato le 4 righe da xmm0,xmm1,xmm2,xmm3
+			; in memoria
+
+			sub rsi,3
+			; riporto esi al valore del ciclo esterno 1
+
+			add rcx,1
+			jmp ciclo_interno_1_SM
+
+		fine_ciclo_interno_1_SM:
+		
+		xor rdi,rdi
+		; ci manca il ciclo interno 2 in cui cicliamo sulle singole colonne dopo aver
+		; controllato che non abbiamo raggiunto il nColonne giusto (ecx*4 == nColonne)
+		mov rdx,0
+		mov rax,8
+		mul rcx
+		mov rcx,rax
+
+		ciclo_interno_2_SM:
+			cmp rcx,r11
+			jge concluso_4_righe_SM
+
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r8
+			vmovss xmm0, [rdx+rax]
+			mov rdx,r9
+			vmovss xmm4, [rdx+rax]
+ 
+			xor rax,rax
+			add rsi,1
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r8
+			vmovss xmm1, [rdx+rax]
+			mov rdx, r9
+			vmovss xmm5, [rdx+rax]
+
+			xor rax,rax
+			add rsi,1
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r8
+			vmovss xmm2, [rdx+rax]
+			mov rdx, r9
+			vmovss xmm6, [rdx+rax]
+			
+			xor rax,rax
+			add rsi,1
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r8
+			vmovss xmm3, [rdx+rax]
+			mov rdx, r9
+			vmovss xmm7, [rdx+rax]
+			; nei primi 32 bit di xmm0,xmm1,xmm2,xmm3 ho i valori delle colonne
+			
+			vsubss xmm0,xmm0,xmm4
+			vsubss xmm1,xmm1,xmm5
+			vsubss xmm2,xmm2,xmm6
+			vsubss xmm3,xmm3,xmm7
+			; ho diviso tutti gli elementi per lo scalare
+
+			sub rsi,3
+			mov rdx,0
+			mov rax,rsi
+			mov rsi,rax
+
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r14
+			vmovss [rdx+rax],xmm0
+ 
+			xor rax,rax
+			add rsi,1
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in ebx ho ecx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r14
+			vmovss [rdx+rax],xmm1
+
+			xor rax,rax
+			add rsi,1
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in ebx ho ecx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r14
+			vmovss [rdx+rax],xmm2
+
+			xor rax,rax
+			add rsi,1
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in ebx ho ecx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r14
+			vmovss [rdx+rax],xmm3
+
+			sub rsi,3
+			mov rdx,0
+			mov rax,rsi
+			mov rsi,rax
+
+			add ecx,1
+			jmp ciclo_interno_2_SM
+
+		concluso_4_righe_SM:
+		mov rdi, r15
+
+		mov rdx,0
+		mov rax,rsi
+		div dword[quattro]
+		mov rsi,rax
+
+		add rsi,1
+		jmp ciclo_esterno_1_SM
+
+	fine_ciclo_esterno_1_SM:
+	mov rdx,0
+	mov rax,rsi
+	mul dword[quattro]
+	mov rsi,rax
+	
+
+	ciclo_esterno_2_SM:	; svolgiamo una riga alla volta se non ho fatto tutte le righe con 4 alla volta
+		cmp rsi,r10
+		jge uscita_sottrazioneMatrice_ass_SM
+		
+		mov r15,rdi
+
+		; in rsi ho l'indice riga
+		mov rdx,0
+		mov rax, r11
+		div dword[otto] ; eax = nColonne/4
+		mov rbx, rax
+
+		vxorps ymm7,ymm7,ymm7
+
+		xor rcx,rcx
+		ciclo_quoziente_2_SM:
+			cmp rcx,rbx
+			jge fine_ciclo_quoziente_2_SM
+
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			; ho ottenuto indiceRiga*(nColonne*4 byte) + (32 byte*indiceColonna) [rsi*r11*4 + 32*rcx]
+			mov rdx, r8
+			vmovups ymm0, [rdx+rax]	; ho caricato la prima riga
+			mov rdx, r9
+			vmovups ymm4, [rdx+rax]
+
+			vsubps ymm0,ymm0,ymm4
+
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			; ho ottenuto indiceRiga*(nColonne*4 byte) + (32 byte*indiceColonna) [rsi*r11*4 + 32*rcx]
+			mov rdx, r14
+			vmovups [rdx+rax],ymm0	; ho caricato la prima riga
+
+			add rcx,1
+			jmp ciclo_quoziente_2_SM
+
+		fine_ciclo_quoziente_2_SM:
+		; ho terminato le colonne prese a 4 ora conto le singole
+
+		mov rdx,0
+		mov rax,8
+		mul rcx
+		mov rcx,rax
+
+		ciclo_resto_2_SM:
+			cmp rcx,r11
+			jge fine_ciclo_resto_2_SM
+
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna	
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
+			mov rdx, r8
+			vmovss xmm0, [rdx+rax]
+			mov rdx, r9
+			vmovss xmm4, [rdx+rax]
+			; nei primi 32 di xmm0 ho inserito l'elemento della matrice
+
+			vsubss xmm0,xmm0,xmm4
+
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in ebx ho ecx*4 che è un indice di colonna	
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
+			mov rdx, r14
+			vmovss [rdx+rax],xmm0
+
+			add rcx,1
+			jmp ciclo_resto_2_SM
+
+		fine_ciclo_resto_2_SM:
+		
+		mov rdi, r15
+
+		add rsi,1
+		jmp ciclo_esterno_2_SM
+
+	uscita_sottrazioneMatrice_ass_SM:
+	; ------------------------------------------------------------
+	; Sequenza di uscita dalla funzione
+	; ------------------------------------------------------------
+		
+	popaq						; ripristina i registri generali
+	mov		rsp, rbp			; ripristina lo Stack Pointer
+	pop		rbp					; ripristina il Base Pointer
+	ret							; torna alla funzione C chiamante
+
+
+
+
+
+prodMatrVett_ass_64:
+	; ------------------------------------------------------------
+	; Sequenza di ingresso nella funzione
+	; ------------------------------------------------------------
+	push		rbp				; salva il Base Pointer
+	mov		rbp, rsp			; il Base Pointer punta al Record di Attivazione corrente
+	pushaq						; salva i registri generali
+
+	; ------------------------------------------------------------
+	; I parametri sono passati nei registri
+	; ------------------------------------------------------------
+
+
+	; elaborazione
+
+	; float* m = ebp+8 , 
+	; float* v = ebp+12, 
+	; int nRighe = ebp+16, 
+	; int nColonne = ebp+20,
+	; int lengthVettore = ebp+24,
+	; float* risultato = ebp+28
+
+	mov r12, r8
+	mov r13, r9
+	mov r8, rdi
+	mov r9, rsi
+	mov r10, rdx
+	mov r11, rcx
+
+
+	cmp r11,r12
+	jne uscita_prodMatrVett_ass_PMV
+
+	mov rdx,0
+	mov rax, r10
+	div dword[otto]
+	mov rdi, rax ; ho ottenuto il nRighe/8 in RDI
+
+	xor rsi,rsi
+	ciclo_esterno_1_PMV:
+		cmp rsi,rdi
+		jge fine_ciclo_esterno_1_PMV
+		; altrimenti prendo 4 righe alla volta
+
+		mov rdx,0
+		mov rax, r11
+		div dword[otto]	
+		mov rbx,rax	; in rbx ho nColonne/8
+
+		vxorps ymm9,ymm9,ymm9
+
+		vmovups [somma_PMV],ymm9 ; sum = 0.0
+
+		mov r15, rdi
+
+		mov rdx,0
+		mov rax,8
+		mul rsi
+		mov rsi,rax
+		; inserisco in RSI = RSI*8 per trovare il primo indice riga delle 8 da analizzare
+
+		xor rcx,rcx
+		ciclo_interno_1_PMV:
+			cmp rcx,rbx
+			jge fine_ciclo_interno_1_PMV
+
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			; ho ottenuto indiceRiga*(nColonne*4 byte) + (32 byte*indiceColonna) [rsi*r20*4 + 32*rcx]
+			mov rdx, r8
+			vmovups ymm0, [rdx+rax]	; ho caricato la prima riga
+
+			add rsi,1
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			mov rdx, r8
+			vmovups ymm1, [rdx+rax]
+	
+			add rsi,1
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			mov rdx, r8
+			vmovups ymm2, [rdx+rax]
+
+			add rsi,1
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			mov rdx, r8
+			vmovups ymm3, [rdx+rax]
+
+			add rsi,1
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			mov rdx, r8
+			vmovups ymm4, [rdx+rax]
+
+			add rsi,1
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			mov rdx, r8
+			vmovups ymm5, [rdx+rax]
+
+			add rsi,1
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			mov rdx, r8
+			vmovups ymm6, [rdx+rax]
+
+			add rsi,1
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			mov rdx, r8
+			vmovups ymm7, [rdx+rax]
+			; ho caricato le 8 righe in ymm0,ymm1,ymm2,ymm3, ymm4, ymm5, ymm6, ymm7
+
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			; in rax ho rcx*32 = indice del vettore
+			mov rdx, r9
+			vmovups ymm8, [rdx+rax]
+			; ho caricato il vettore in ymm4
+
+			vmulps ymm0,ymm0,ymm8
+			vmulps ymm1,ymm1,ymm8
+			vmulps ymm2,ymm2,ymm8
+			vmulps ymm3,ymm3,ymm8
+			vmulps ymm4,ymm4,ymm8
+			vmulps ymm5,ymm5,ymm8
+			vmulps ymm6,ymm6,ymm8
+			vmulps ymm7,ymm7,ymm8
+
+			vxorps ymm8,ymm8,ymm8
+			vmovups [ymmTMP],ymm8
+
+			vhaddps ymm0,ymm0,ymm0
+			vhaddps ymm1,ymm1,ymm1
+			vhaddps ymm2,ymm2,ymm2
+			vhaddps ymm3,ymm3,ymm3
+			vhaddps ymm4,ymm4,ymm4
+			vhaddps ymm5,ymm5,ymm5
+			vhaddps ymm6,ymm6,ymm6
+			vhaddps ymm7,ymm7,ymm7
+
+			vhaddps ymm0,ymm0,ymm0
+			vhaddps ymm1,ymm1,ymm1
+			vhaddps ymm2,ymm2,ymm2
+			vhaddps ymm3,ymm3,ymm3
+			vhaddps ymm4,ymm4,ymm4
+			vhaddps ymm5,ymm5,ymm5
+			vhaddps ymm6,ymm6,ymm6
+			vhaddps ymm7,ymm7,ymm7
+
+			; abbiamo liberi i registri ymm 8->15
+			vperm2f128 ymm8,ymm0,ymm0,00000001b
+			vperm2f128 ymm9,ymm1,ymm1,00000001b
+			vperm2f128 ymm10,ymm2,ymm2,00000001b
+			vperm2f128 ymm11,ymm3,ymm3,00000001b
+			vperm2f128 ymm12,ymm4,ymm4,00000001b
+			vperm2f128 ymm13,ymm5,ymm5,00000001b
+			vperm2f128 ymm14,ymm6,ymm6,00000001b
+			vperm2f128 ymm15,ymm7,ymm7,00000001b
+			
+			vaddss xmm0,xmm8
+			vaddss xmm1,xmm9
+			vaddss xmm2,xmm10
+			vaddss xmm3,xmm11
+			vaddss xmm4,xmm12
+			vaddss xmm5,xmm13
+			vaddss xmm6,xmm14
+			vaddss xmm7,xmm15
+			; nei 32 bit di ognuno ho la somma degli elementi della riga ymm0,ymm1,....,ymm7
+
+			vmovss [ymmTMP],xmm0
+			vmovss [ymmTMP+4],xmm1
+			vmovss [ymmTMP+8],xmm2
+			vmovss [ymmTMP+12],xmm3
+			vmovss [ymmTMP+16],xmm4
+			vmovss [ymmTMP+20],xmm5
+			vmovss [ymmTMP+24],xmm6
+			vmovss [ymmTMP+28],xmm7
+			; ho ottenuto il vettore in mem con le 8 somme [a,b,c,d,e,f,g,h]
+
+			vxorps ymm1, ymm1, ymm1
+			vxorps ymm2, ymm2, ymm2
+			vmovups ymm1, [ymmTMP]
+			vmovups ymm2, [somma_PMV]
+			vaddps ymm1,ymm1,ymm2
+			vmovups [somma_PMV],ymm1
+
+			sub rsi,7
+			mov rdx,0
+			mov rax,rsi
+			mov rsi,rax
+			; riporto esi al valore del ciclo esterno 1
+
+
+			add rcx,1
+			jmp ciclo_interno_1_PMV
+
+		fine_ciclo_interno_1_PMV:
+		
+		xor rdi,rdi
+		; ci manca il ciclo interno 2 in cui cicliamo sulle singole colonne dopo aver
+		; controllato che non abbiamo raggiunto il nColonne giusto (rcx*8 == nColonne)
+		mov rdx,0
+		mov rax,8
+		mul rcx
+		mov rcx,rax
+
+		ciclo_interno_2_PMV:
+			cmp rcx,r11
+			jge concluso_4_righe_PMV
+
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r8
+			vmovss xmm0, [rdx+rax]
+ 
+			xor rax,rax
+			add rsi,1
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r8
+			vmovss xmm1, [rdx+rax]
+
+			xor rax,rax
+			add rsi,1
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r8
+			vmovss xmm2, [rdx+rax]
+
+
+			xor rax,rax
+			add rsi,1
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r8
+			vmovss xmm3, [rdx+rax]
+
+			xor rax,rax
+			add rsi,1
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r8
+			vmovss xmm4, [rdx+rax]
+
+			xor rax,rax
+			add rsi,1
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r8
+			vmovss xmm5, [rdx+rax]
+
+			xor rax,rax
+			add rsi,1
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r8
+			vmovss xmm6, [rdx+rax]
+
+			xor rax,rax
+			add rsi,1
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r8
+			vmovss xmm7, [rdx+rax]
+			; nei primi 32 bit di xmm0,xmm1,xmm2,xmm3 ho i valori delle colonne
+			
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rdx,r9
+			vmovss xmm8, [rdx+rax]
+			; ho in xmm8 l'elemento del vettore
+
+			vmulss xmm0,xmm8
+			vmulss xmm1,xmm8
+			vmulss xmm2,xmm8
+			vmulss xmm3,xmm8
+			vmulss xmm4,xmm8
+			vmulss xmm5,xmm8
+			vmulss xmm6,xmm8
+			vmulss xmm7,xmm8
+			; abbiamo tutto moltiplicato
+			; ho nei 32 bit lower tutte le 8 moltiplicazioni dei registri
+
+			vaddss xmm0, [somma_PMV]
+			vaddss xmm1, [somma_PMV+4]
+			vaddss xmm2, [somma_PMV+8]
+			vaddss xmm3, [somma_PMV+12]
+			vaddss xmm4, [somma_PMV+16]
+			vaddss xmm5, [somma_PMV+20]
+			vaddss xmm6, [somma_PMV+24]
+			vaddss xmm7, [somma_PMV+28]
+
+			vmovss [somma_PMV], xmm0
+			vmovss [somma_PMV+4], xmm1
+			vmovss [somma_PMV+8], xmm2
+			vmovss [somma_PMV+12], xmm3
+			vmovss [somma_PMV+16], xmm4
+			vmovss [somma_PMV+20], xmm5
+			vmovss [somma_PMV+24], xmm6
+			vmovss [somma_PMV+28], xmm7
+
+			sub rsi,7
+			mov rdx,0
+			mov rax,rsi
+			mov rsi,rax
+			; riporto rsi al valore iniziale del ciclo
+
+			add rcx,1
+			jmp ciclo_interno_2_PMV
+
+		concluso_4_righe_PMV:
+		mov rdi, r15
+
+		mov rdx,0
+		mov rax, rsi
+		div dword[otto]
+		mov rsi,rax
+
+		mov rbx,r13 ; prendo il puntatore del vettore risultato
+		mov rdx,0
+		mov rax,32
+		mul rsi
+
+		vmovups ymm7, [somma_PMV]
+		vmovups [rbx+rax],ymm7
+
+		add rsi,1
+		jmp ciclo_esterno_1_PMV
+
+	fine_ciclo_esterno_1_PMV:
+	mov rdx,0
+	mov rax,rsi
+	mul dword[otto]
+	mov rsi,rax
+	
+	ciclo_esterno_2_PMV:	; svolgiamo una riga alla volta se non ho fatto tutte le righe considerandone 8 alla volta
+		cmp rsi,r10
+		jge uscita_prodMatrVett_ass_PMV
+		
+		mov r15,rdi
+
+		; in rsi ho l'indice riga
+		mov rdx,0
+		mov rax, r11
+		div dword[otto] ; eax = nColonne/8
+		mov rbx, rax
+
+		vxorps ymm9,ymm9, ymm9
+
+		xor rcx,rcx
+		ciclo_quoziente_2_PMV:
+			cmp rcx,rbx
+			jge fine_ciclo_quoziente_2_PMV
+
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			xor rdi,rdi
+			mov rdi, rax
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			add rax,rdi
+			; ho ottenuto indiceRiga*(nColonne*4 byte) + (32 byte*indiceColonna) [rsi*r11*4 + 32*rcx]
+			mov rdx, r8
+			vmovups ymm0, [rdx+rax]	; ho caricato la prima riga
+
+			mov rdx,0
+			mov rax, 32
+			mul rcx
+			; in rax ho rcx*32 = indice del vettore
+			mov rdx, r9
+			vmovups ymm4, [rdx+rax]
+			; ho caricato il vettore in ymm4
+
+			vmulps ymm0,ymm0,ymm4
+
+			vhaddps ymm0,ymm0,ymm0
+			vhaddps ymm0,ymm0,ymm0
+
+			vperm2f128 ymm1,ymm0,ymm0,00000001b
+			vaddss xmm0,xmm1
+			; nei primi 32 bit ho la somma degli 8 elementi moltiplcati per gli 8 del vettore
+
+			vaddss xmm9,xmm9,xmm0
+
+			add rcx,1
+			jmp ciclo_quoziente_2_PMV
+
+		fine_ciclo_quoziente_2_PMV:
+		; ho terminato le colonne prese a 8, ora conto le singole
+
+		mov rdx,0
+		mov rax,8
+		mul rcx
+		mov rcx,rax
+
+		ciclo_resto_2_PMV:
+			cmp rcx,r11
+			jge fine_ciclo_resto_2_PMV
+
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rbx, rax ; in ebx ho ecx*4 che è un indice di colonna	
+			mov rdx,0
+			mov rax, r11
+			mul dword[quattro]
+			mul rsi
+			add rax,rbx
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
+			mov rdx, r8
+			vmovss xmm0, [rdx+rax]
+			; nei primi 32 di xmm0 ho inserito l'elemento della matrice
+
+			mov rdx,0
+			mov rax,4
+			mul rcx
+			mov rdx,r9
+			vmovss xmm4, [rdx+rax]
+			; ho in xmm4 l'elemento del vettore
+			
+			vmulss xmm0,xmm0,xmm4
+
+			vaddss xmm9,xmm9,xmm0
+
+			add rcx,1
+			jmp ciclo_resto_2_PMV
+
+		fine_ciclo_resto_2_PMV:
+		
+		; prendere i primi 32 bit di xmm9 ed aggiungerli in posizione del vettore risultato
+		mov rdx,0
+		mov rax,4
+		mul rsi
+		
+		mov rcx,r13
+		vmovss [rcx+rax],xmm9
+
+		mov rdi,r15
+
+		add rsi,1
+		jmp ciclo_esterno_2_PMV
+
+	uscita_prodMatrVett_ass_PMV:
 		; ------------------------------------------------------------
 		; Sequenza di uscita dalla funzione
 		; ------------------------------------------------------------
@@ -137,6 +1898,11 @@ prova:
 		mov		rsp, rbp			; ripristina lo Stack Pointer
 		pop		rbp					; ripristina il Base Pointer
 		ret							; torna alla funzione C chiamante
+
+
+
+
+
 
 trasponi_ass_64:
 	; ------------------------------------------------------------
@@ -202,7 +1968,7 @@ trasponi_ass_64:
 			sub rdi,1
 
 			mov rdx,0
-			mov rax,4
+			mov rax,8
 			mul rdi
 			mov rdi,rax ; moltiplico rdi * 8 per andare a riempire la riga giusta
 
@@ -222,16 +1988,18 @@ trasponi_ass_64:
 			vmovups ymm14,ymm1
 			vmovups ymm15, ymm1
 
+			vperm2f128 ymm5,ymm5,ymm5,00010001b	
+			vperm2f128 ymm6,ymm6,ymm6,00010001b
+			vperm2f128 ymm7,ymm7,ymm7,00010001b
+			vperm2f128 ymm8,ymm8,ymm8,00010001b
+
 			vshufps ymm2,ymm2,ymm0,1
 			vshufps ymm3,ymm3,ymm0,2
 			vshufps ymm4,ymm4,ymm0,3
-			vperm2f128 ymm5,ymm5,ymm5,00010001b	
 			vshufps ymm5,ymm5,ymm5,4
-			vperm2f128 ymm6,ymm6,ymm6,00010001b
+			
 			vshufps ymm6,ymm6,ymm6,5
-			vperm2f128 ymm7,ymm7,ymm7,00010001b
 			vshufps ymm7,ymm7,ymm7,6
-			vperm2f128 ymm8,ymm8,ymm8,00010001b
 			vshufps ymm8,ymm8,ymm8,7
 
 			vshufps ymm9,ymm9,ymm1,1
@@ -399,7 +2167,7 @@ trasponi_ass_64:
 			sub rdi,15
 
 			mov rdx,0
-			mov rcx,8
+			mov rcx,16
 			mov rax,rdi
 			div rcx
 			mov rdi,rax
@@ -409,7 +2177,7 @@ trasponi_ass_64:
 		
 		fine_ciclo_quoziente_TRA:
 		mov rdx,0
-		mov rax,8
+		mov rax,16
 		mul rdi
 		mov rdi,rax
 
@@ -435,12 +2203,12 @@ trasponi_ass_64:
 			mov rcx,rax ; ecx = esi*4
 
 			mov rdx,0
-			mov rax,r10
+			mov rax,r9
 			mul rdi
 			mul dword[quattro]
 			add rax,rcx
 			mov rdx,r11
-			movss [rdx+rax],xmm0
+			vmovss [rdx+rax],xmm0
 
 			add rdi,1
 			jmp ciclo_resto_TRA
@@ -528,7 +2296,7 @@ divisioneVettoreScalare_ass_64:
 		vmovss xmm1, [r9]
 		; ho caricato lo scalare
 
-		vdivss xmm2,xmm1
+		vdivss xmm2,xmm2,xmm1
 
 		vmovss [r11+rax],xmm2
 
@@ -600,9 +2368,13 @@ distanzaEuclidea_ass_64:
 
 			vhaddps ymm0,ymm0,ymm0
 			vhaddps ymm0,ymm0,ymm0
-			vhaddps ymm0,ymm0,ymm0
+			;vhaddps ymm0,ymm0,ymm0
 
-			vaddss xmm7,xmm0
+			vperm2f128 ymm8,ymm0,ymm0,00000001b
+
+			vaddss xmm0,xmm0,xmm8
+
+			vaddss xmm7,xmm7,xmm0
 
 			add rsi,1
 			jmp ciclo_quoziente_DE
@@ -637,7 +2409,7 @@ distanzaEuclidea_ass_64:
 		fine_ciclo_resto_DE:
 		
 		vsqrtss xmm7,xmm7,xmm7
-		movss [r11],xmm7
+		vmovss [r11],xmm7
 
 		; ------------------------------------------------------------
 		; Sequenza di uscita dalla funzione
@@ -664,14 +2436,13 @@ prodScalare_ass_64:
 
 		; (float* v1,int dim1,float* v2,int dim2,float* rs)
 
-		mov rax,r8
+		mov r12,r8	; rs
 		mov r8,rdi	; v1
 		mov r9, rsi	; dim1
 		mov r10, rdx	; v2
 		mov r11, rcx	; dim2
-		mov r12,rax	; rs
 
-		cmp r9,rcx
+		cmp r9,r11
 		jne uscita_prodottoScalare_ass_PS
 
 		mov rdx,0
@@ -686,22 +2457,27 @@ prodScalare_ass_64:
 			cmp rsi,rdi
 			jge fine_ciclo_quoziente_PS
 
-			_1:mov rdx,0
-			_11:mov rax,32
-			_12:mul rsi
-			_13:mov rdx,r8
-			_14:mov rbx, r10
+			mov rdx,0
+			mov rax,32
+			mul rsi
+			mov rdx,r8
+			mov rbx, r10
 
-			_15:vmovups ymm0, [rdx+rax]
-			_16:vmovups ymm1, [rbx+rax]
+			vmovups ymm0, [rdx+rax]
+			vmovups ymm1, [rbx+rax]
 			; ho caricato gli 8 elementi dei due vettori
 
-			_2:vmulps ymm0,ymm0,ymm1
-			_22:vhaddps ymm0,ymm0,ymm0
-			_23:vhaddps ymm0,ymm0,ymm0
-			_24:vhaddps ymm0,ymm0,ymm0
+			vmulps ymm0,ymm0,ymm1
 
-			vaddss xmm7,xmm0
+			vhaddps ymm0,ymm0,ymm0
+			vhaddps ymm0,ymm0,ymm0
+			;vhaddps ymm0,ymm0,ymm0
+
+			vperm2f128 ymm8,ymm0,ymm0,00000001b
+
+			vaddss xmm0,xmm0,xmm8
+
+			vaddss xmm7,xmm7,xmm0
 
 			add rsi, 1
 			jmp ciclo_quoziente_PS
@@ -710,7 +2486,7 @@ prodScalare_ass_64:
 		mov rdx,0
 		mov rax,8
 		mul rsi
-		mov rsi,rax ; in esi ho esi*4 = colonna corrente da cui iniziare l'analisi singola
+		mov rsi,rax ; in rsi ho rsi*8 = colonna corrente da cui iniziare l'analisi singola
 
 		ciclo_resto_PS:
 			cmp rsi,r9
@@ -726,9 +2502,9 @@ prodScalare_ass_64:
 			vmovss xmm1, [ecx+eax]
 			; ho caricato i due elementi
 
-			vmulss xmm0,xmm1
+			vmulss xmm0,xmm0,xmm1
 
-			vaddss xmm7,xmm0
+			vaddss xmm7,xmm7,xmm0
 
 			add rsi,1
 			jmp ciclo_resto_PS
@@ -792,7 +2568,7 @@ calcolaNorma_ass_64:
 
 	mov rdx,0
 	mov rax,r9
-	div qword[otto]
+	div dword[otto]
 	mov rdi, rax
 
 	xor rsi, rsi
@@ -808,17 +2584,21 @@ calcolaNorma_ass_64:
 		
         vhaddps ymm0,ymm0,ymm0 	; sommo pos 0 e 1 di xmm
 		vhaddps ymm0,ymm0,ymm0 	; stessa cosa
-		vhaddps ymm0,ymm0,ymm0	; ho ridotto nei primi 32 bit la somma degli 8 elementi
+		;vhaddps ymm0,ymm0,ymm0	; ho ridotto nei primi 32 bit la somma degli 8 elementi
 
-		vaddss xmm1,xmm0 ; sommo norma a quello calcolato prima
+		vperm2f128 ymm8, ymm0, ymm0,00000001b
+
+		vaddss xmm0,xmm0,xmm8
+
+		vaddss xmm1,xmm1,xmm0 ; sommo norma a quello calcolato prima
 		
 		add rsi,1
 		jmp ciclo_quoz_CN
 
 	continua_CN:
 		mov rdx,0
-		mov rax,rsi
-		mul dword[otto]
+		mov rax,8
+		mul rsi
 		mov rsi,rax
 
 	ciclo_resto_CN:
@@ -827,15 +2607,15 @@ calcolaNorma_ass_64:
 		
 		mov rbx,r8
 		vmovss xmm0,[rbx+4*rsi]
-		vmulss xmm0,xmm0
-		addss xmm1, xmm0
+		vmulss xmm0,xmm0,xmm0
+		vaddss xmm1, xmm1,xmm0
 		
 		add esi,1
 		jmp ciclo_resto_CN
 
 	fine_calcolaNorma_ass_CN:
 
-	vsqrtss xmm1,xmm1
+	vsqrtss xmm1,xmm1,xmm1
 	vmovss [r10],xmm1
 
 	; ------------------------------------------------------------

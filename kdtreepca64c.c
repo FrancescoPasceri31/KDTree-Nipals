@@ -215,14 +215,13 @@ void save_data(char* filename, void* X, int n, int k) {
 
 
 // PROCEDURE ASSEMBLY
-extern void prova(float* y, float* x, float* ris);
 extern void calcolaNorma_ass_64(float* arr, int length, float* norma);
-//extern void prodMatrVett_ass_64(float* m, float* v, int nRighe, int nColonne, int lengthVettore, float* risultato);
+extern void prodMatrVett_ass_64(float* m, float* v, int nRighe, int nColonne, int lengthVettore, float* risultato);
 extern void prodScalare_ass_64(float* v1,int dim1,float* v2,int dim2,float* rs);
 extern void divisioneVettoreScalare_ass_64(float* v, float* s, int dim, float* risultato);
-//extern void sottrazioneMatrici_ass_64(float* m1, float* m2, int nRighe1, int nColonne1, int nRighe2, int nColonne2, float* risultato);
+extern void sottrazioneMatrici_ass_64(float* m1, float* m2, int nRighe1, int nColonne1, float* risultato);
 extern void distanzaEuclidea_ass_64(float* P,float* Q, int dimen, float* dist);
-//extern void prodMatr_ass_64(float* m1, int nRighe1, int nColonne1, float* m2, int nRighe2, int nColonne2, float* risultato);
+extern void prodMatr_ass_64(float* m1, int nRighe1, int nColonne1, float* m2, int nRighe2, int nColonne2, float* risultato);
 extern void trasponi_ass_64(float* m, int nRighe, int nColonne, float* risultato);
 
 
@@ -261,6 +260,12 @@ void stampaMatriceInt(int* m, int r, int c){
 /*
 *	Metodi di supporto
 */
+
+void sottrazione_matrice_controllo(float* m1, float* m2, int nRighe1, int nColonne1, int nRighe2, int nColonne2, float* risultato){
+    if(nRighe1==nRighe2 && nColonne1==nColonne2){
+        sottrazioneMatrici_ass_64(m1,m2, nRighe1, nColonne1, risultato);
+    }
+}
 
 void trasponi(float* m, int nRighe, int nColonne, float* risultato){
     int i, j;
@@ -391,35 +396,35 @@ void nipals(params *input){
         float t,t1;
         float r;
         do{
-            trasponi(input->ds, input->n, input->k, input->dsTras);
-            //trasponi_ass_64(input->ds, input->n, input->k, input->dsTras);
+            //trasponi(input->ds, input->n, input->k, input->dsTras);
+            trasponi_ass_64(input->ds, input->n, input->k, input->dsTras);
 
-            prodScalare(input->u, input->n, input->u, input->n, &t);
-            //prodScalare_ass_64(input->u, input->n, input->u, input->n, &t);
+            //prodScalare(input->u, input->n, input->u, input->n, &t);
+            prodScalare_ass_64(input->u, input->n, input->u, input->n, &t);
 
-            prodMatrVett(input->dsTras, input->u, input->k, input->n, input->n, input->v);
-            //prodMatrVett_ass_64(input->dsTras, input->u, input->k, input->n, input->n, input->v);
+            //prodMatrVett(input->dsTras, input->u, input->k, input->n, input->n, input->v);
+            prodMatrVett_ass_64(input->dsTras, input->u, input->k, input->n, input->n, input->v);
 
-            divisioneVettoreScalare(input->v, t, input->k, input->v);
-            //divisioneVettoreScalare_ass_64(input->v, &t, input->k, input->v);
+            //divisioneVettoreScalare(input->v, t, input->k, input->v);
+            divisioneVettoreScalare_ass_64(input->v, &t, input->k, input->v);
 
-            calcolaNorma(input->v, input->k, &r);
-            //calcolaNorma_ass_64(input->v, input->k, &r);
+            //calcolaNorma(input->v, input->k, &r);
+            calcolaNorma_ass_64(input->v, input->k, &r);
 
-            divisioneVettoreScalare(input->v, r, input->k, input->v);
-            //divisioneVettoreScalare_ass_64(input->v, &r, input->k, input->v);
+            //divisioneVettoreScalare(input->v, r, input->k, input->v);
+            divisioneVettoreScalare_ass_64(input->v, &r, input->k, input->v);
 
-            prodMatrVett(input->ds, input->v, input->n, input->k, input->k, input->u);
-            //prodMatrVett_ass_64(input->ds, input->v, input->n, input->k, input->k, input->u);
+            //prodMatrVett(input->ds, input->v, input->n, input->k, input->k, input->u);
+            prodMatrVett_ass_64(input->ds, input->v, input->n, input->k, input->k, input->u);
 
-            prodScalare(input->v, input->k,input->v, input->k, &r);
-            //prodScalare_ass_64(input->v, input->k,input->v, input->k, &r);
+            //prodScalare(input->v, input->k,input->v, input->k, &r);
+            prodScalare_ass_64(input->v, input->k,input->v, input->k, &r);
             
-            divisioneVettoreScalare(input->u, r, input->n, input->u);
-            //divisioneVettoreScalare_ass_64(input->u, &r, input->n, input->u);
+            //divisioneVettoreScalare(input->u, r, input->n, input->u);
+            divisioneVettoreScalare_ass_64(input->u, &r, input->n, input->u);
 
-            prodScalare(input->u, input->n, input->u, input->n, &t1);
-            //prodScalare_ass_64(input->u, input->n, input->u, input->n, &t1);
+            //prodScalare(input->u, input->n, input->u, input->n, &t1);
+            prodScalare_ass_64(input->u, input->n, input->u, input->n, &t1);
             
         }while( fabsf( t1 - t) >= soglia*t1);
  
@@ -431,11 +436,11 @@ void nipals(params *input){
             input->V[j*input->h+i]=input->v[j];
         }
 
-        prodMatrici(input->u, input->n, 1, input->v, 1, input->k, input->dsTras);
-        //prodMatr_ass_64(input->u, input->n, 1, input->v, 1, input->k, input->dsTras);
+        //prodMatrici(input->u, input->n, 1, input->v, 1, input->k, input->dsTras);
+        prodMatr_ass_64(input->u, input->n, 1, input->v, 1, input->k, input->dsTras);
 
-        sottrazioneMatrici(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
-        //sottrazioneMatrici_ass_64(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
+        //sottrazioneMatrici(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
+        sottrazione_matrice_controllo(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
         
         }
     }
@@ -659,8 +664,8 @@ void distance( float* querySet, int nColonne, int indQ, KDTREE *nodo, params* in
         else 
             input->Point[j]= querySet[indQ * nColonne +j];        
     }
-    distanzaEuclidea(input->Point, input->Qoint, nColonne, dist);
-    //distanzaEuclidea_ass_64(input->Point, input->Qoint, nColonne, dist);
+    //distanzaEuclidea(input->Point, input->Qoint, nColonne, dist);
+    distanzaEuclidea_ass_64(input->Point, input->Qoint, nColonne, dist);
 }
 
 
@@ -676,8 +681,8 @@ void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int 
         }
 
 
-        distanzaEuclidea(n->P, input-> Qoint, nColonne, &dist);
-        //distanzaEuclidea_ass_64(n->P, input-> Qoint, nColonne, &dist);
+        //distanzaEuclidea(n->P, input-> Qoint, nColonne, &dist);
+        distanzaEuclidea_ass_64(n->P, input-> Qoint, nColonne, &dist);
 
         if(  dist <= input->r ){
             
@@ -710,8 +715,8 @@ void range_query(params* input) {
     // Codificare qui l'algoritmo di ricerca
     if(input->h>0){
         centraMediaQS(input);
-        prodMatrici(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
-        //prodMatr_ass_64(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
+        //prodMatrici(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
+        prodMatr_ass_64(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
 
     // Calcola il risultato come una matrice di nQA coppie di interi
     // (id_query, id_vicino)
@@ -743,57 +748,13 @@ void range_query(params* input) {
 
 
 int main(int argc, char** argv) {
-    
-    int nCol1= 17,nCol2= 13;
-    int nRig1= 2,nRig2= 1;
-
-    float scalare = 2.2;
-
-    float* p = (float*)malloc(sizeof(float)*nRig1*nCol1);
-    float* p1 = (float*)malloc(sizeof(float)*nRig2*nCol2);
-
-    for(int i=0; i<nRig1; i++){
-        for(int j=0; j<nCol1;j++){
-            p[i*nCol1+j] = 5.0 + j;
-        }
-    }
-
-    for(int i=0; i<nRig2; i++){
-        for(int j=0; j<nCol2;j++){
-            p1[i*nCol1+j] = 5.0;
-        }
-    }
-
-    stampaMatrice(p,nRig1,nCol1);
-    //stampaMatrice(p1,nRig2,nCol2);
-
-    float* ris_1 = (float*)malloc(sizeof(float)*nRig1*nCol1);
-    float* ris_2 = (float*)malloc(sizeof(float)*nRig1*nCol1);
-
-    float* punt1  = (float*)malloc(sizeof(float));
-    float* punt2  = (float*)malloc(sizeof(float));
-
-    trasponi(p, nRig1, nCol1, ris_1);
-    trasponi_ass_64(p, nRig1, nCol1, ris_2);
-
-    printf("\n************************************\n");
-    printf( "C: %.2f", 0.0 );
-    stampaMatrice(ris_1, nRig1, nCol1);
-    printf( "ASS: %.2f", 0.0 );
-    stampaMatrice(ris_2, nRig1, nCol1);
-    printf("\n**********************************\n");
-
-
-
-
-
 
     char fname[256];
     char* dsname;
     int i, j, k;
     clock_t t;
     float time;
-    
+
     //
     // Imposta i valori di default dei parametri
     //
@@ -805,7 +766,7 @@ int main(int argc, char** argv) {
     input->kdtreeRoot = NULL;
     input->r = -1;
     input->silent = 0;
-    input->display = 0;
+    input->display = 1;
     input->QA = NULL;
     input->nQA = 0;
     
