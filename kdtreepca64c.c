@@ -102,6 +102,7 @@ typedef struct {
     float** pQA; //punto in posizione nQA associato al punto query in posizione nQA di QA
     int nQA; //numero di risposte alle query
     int *QAfin;
+
 } params;
 
 
@@ -515,8 +516,9 @@ int cercaMediano(float* dataset, int nElem, int dimensioneTaglio,  int nCol, flo
     int i;
     float* arr = (float*) malloc(sizeof(float)*nElem);
     for(i=0; i<nElem; i++){
-        arr[i] = dataset[i*nCol+dimensioneTaglio];
-        input->vetTmp[i] = i;
+        arr[i] = dataset[i*nCol+dimensioneTaglio];  // array da ordinare
+        input->vetTmp[i] = i;   // array degli indici che viene ordinato 
+            // nel merge a seconda del movimento del valore che rappresenta.
     }
     mergeSort(arr, nElem, 0, nElem-1, input);
     minEmax[0]= arr[0];
@@ -630,7 +632,7 @@ KDTREE* buildTree(float* dataset,int nElem, int livello, int col, int dxORsx, fl
     float* datasetMagg = creaDatasetMaggiore(input,dataset,nElem, dimMagg, col,c,indicePunto);
     float* datasetMin = creaDatasetMinore(input,dataset,nElem, dimMin, col,c,indicePunto);
 
-    curr->P = (float*)malloc(sizeof(float)); 
+    //curr->P = (float*)malloc(sizeof(float)); 
     curr->P = &dataset[indicePunto*col];
 
     curr->H = Hcurr;
@@ -692,7 +694,6 @@ void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int 
         int i;
 
         for(i=0; i<nColonne; i++){
-            //input-> Point[i]= dataSet[n->indP*nColonne+ i];
             input-> Qoint[i]= querySet[indQ*nColonne+ i];
         }
 
@@ -1058,7 +1059,7 @@ int main(int argc, char** argv) {
         sprintf(fname, "%s.qa", input->filename);
         save_data(fname, input->QA, input->nQA, 2);
     }
-    
+
     if (!input->silent)
         printf("\nDone.\n");
 

@@ -630,19 +630,6 @@ prodMatr_ass:
 				
 			inserisco_in_memoria_PM:
 			
-			;movups [xmmTMP],xmm7
-			;push dword[xmmTMP+12]
-			;push dword[xmmTMP+8]
-			;push dword[xmmTMP+4]
-			;push dword[xmmTMP]
-			;push stampaXMM
-			;call printf
-			;pop dword[xmmTMP]
-			;pop dword[xmmTMP+12]
-			;pop dword[xmmTMP+8]
-			;pop dword[xmmTMP+4]
-			;pop dword[xmmTMP]
-			
 			mov edx,0
 			mov eax,[ebp+28]
 			mul esi
