@@ -578,26 +578,42 @@ void calcolaDimDataset(float* dataset, int nElem, int col, int c, int mediano, i
         }
     }
 }
-    
-KDTREE* buildTree(float* dataset,int nElem, int livello, int col, params *input){
+
+/* int figlio == 0 -> dx, 1 --> sx, -1 --> root */
+KDTREE* buildTree(float* dataset,int nElem, int livello, int col, int dxORsx, float *Hpadre, params *input){
 
     if( nElem == 0) return NULL;
     int c= livello%col;
     int indicePunto;
     int i,j;
     KDTREE *curr = (KDTREE *) malloc (sizeof(KDTREE));
-    curr->H = malloc (sizeof(float)* 2*col);
-
+    float* Hcurr = malloc (sizeof(float)* 2*col);
 
     float* minEmax= malloc (sizeof(float)*2); 
 
     for(i=0; i< col; i++){
-        int med= cercaMediano(dataset, nElem, i, col,minEmax, input);        
-        if( i== c){
+        int med = cercaMediano(dataset, nElem, i, col,minEmax, input);  // cerco solo mediano        
+        if( i == c ){    // se è la colonna interessata del nodo
             indicePunto=med;
+            if(dxORsx == 0){    // se figlio dx
+                Hcurr[i*2] = dataset[ med*col + i];
+                Hcurr[i*2+1] = Hpadre[i*2+1];
+            }else if(dxORsx == 1){  // se figlio sx
+                Hcurr[i*2] = Hpadre[i*2];
+                Hcurr[i*2+1] = dataset[ med*col + i];
+            }else{  // se il root
+                Hcurr[i*2] = minEmax[0];
+                Hcurr[i*2+1]= minEmax[1];
+            }
+        }else{  // non è la colonna interessata del nodo 
+            if( dxORsx == -1 ){
+                Hcurr[i*2] = minEmax[0];
+                Hcurr[i*2+1]= minEmax[1];
+            }else{
+                Hcurr[i*2] = Hpadre[i*2];
+                Hcurr[i*2+1]= Hpadre[i*2+1];
+            }
         }
-        curr->H[i*2] = minEmax[0];
-        curr->H[i*2+1]= minEmax[1];
     }
 
     int dimMin=0, dimMagg=0;
@@ -606,12 +622,13 @@ KDTREE* buildTree(float* dataset,int nElem, int livello, int col, params *input)
     float* datasetMagg = creaDatasetMaggiore(input,dataset,nElem, dimMagg, col,c,indicePunto);
     float* datasetMin = creaDatasetMinore(input,dataset,nElem, dimMin, col,c,indicePunto);
 
-    curr->P = malloc(sizeof(float)); 
+    curr->P = (float*)malloc(sizeof(float)); 
     curr->P = &dataset[indicePunto*col];
 
+    curr->H = Hcurr;
 
-    curr->figlioSx = buildTree(datasetMin, dimMin, livello+1, col, input);
-    curr->figlioDx = buildTree(datasetMagg, dimMagg, livello+1, col, input);
+    curr->figlioSx = buildTree(datasetMin, dimMin, livello+1, col, 1, Hcurr, input);
+    curr->figlioDx = buildTree(datasetMagg, dimMagg, livello+1, col, 0, Hcurr, input);
 
     return curr;
 }
@@ -623,9 +640,9 @@ void kdtree(params* input) {
     // -------------------------------------------------
 
     if(input->h > 0){
-        input->kdtreeRoot= buildTree(input->U, input->n, 0, input->h, input);
+        input->kdtreeRoot= buildTree(input->U, input->n, 0, input->h, -1, NULL, input);
     }else{    
-        input->kdtreeRoot= buildTree(input->ds, input->n, 0, input->k, input);
+        input->kdtreeRoot= buildTree(input->ds, input->n, 0, input->k, -1, NULL, input);
     }
     
 }

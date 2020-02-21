@@ -331,9 +331,7 @@ void prodMatrici(float* m1, int nRighe1, int nColonne1, float* m2, int nRighe2, 
             for(j=0; j<nColonne2; j++){
                 sum=0.0;
                 for(l=0; l<nColonne1; l++){
-                    //for(z=0; z<nRighe2; z++){
-                        sum += m1[i*nColonne1+l] * m2[l*nColonne2+j];
-                    //}
+                    sum += m1[i*nColonne1+l] * m2[l*nColonne2+j];
                 }
                 risultato[i*nColonne2+j] = sum;
             }
@@ -419,7 +417,7 @@ void nipals(params *input){
 
             //prodScalare(input->v, input->k,input->v, input->k, &r);
             prodScalare_ass_64(input->v, input->k,input->v, input->k, &r);
-            
+
             //divisioneVettoreScalare(input->u, r, input->n, input->u);
             divisioneVettoreScalare_ass_64(input->u, &r, input->n, input->u);
 
@@ -441,9 +439,9 @@ void nipals(params *input){
 
         //sottrazioneMatrici(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
         sottrazione_matrice_controllo(input->ds, input->dsTras, input->n, input->k, input->n, input->k, input->ds);
-        
-        }
+    
     }
+}
 
 void pca(params* input) {
     // Codificare qui l'algoritmo PCA
@@ -589,25 +587,41 @@ void calcolaDimDataset(float* dataset, int nElem, int col, int c, int mediano, i
     }
 }
     
-KDTREE* buildTree(float* dataset,int nElem, int livello, int col, params *input){
+/* int figlio == 0 -> dx, 1 --> sx, -1 --> root */
+KDTREE* buildTree(float* dataset,int nElem, int livello, int col, int dxORsx, float *Hpadre, params *input){
 
     if( nElem == 0) return NULL;
     int c= livello%col;
     int indicePunto;
     int i,j;
     KDTREE *curr = (KDTREE *) malloc (sizeof(KDTREE));
-    curr->H = malloc (sizeof(float)* 2*col);
-
+    float* Hcurr = malloc (sizeof(float)* 2*col);
 
     float* minEmax= malloc (sizeof(float)*2); 
 
     for(i=0; i< col; i++){
-        int med= cercaMediano(dataset, nElem, i, col,minEmax, input);        
-        if( i== c){
+        int med = cercaMediano(dataset, nElem, i, col,minEmax, input);  // cerco solo mediano        
+        if( i == c ){    // se è la colonna interessata del nodo
             indicePunto=med;
+            if(dxORsx == 0){    // se figlio dx
+                Hcurr[i*2] = dataset[ med*col + i];
+                Hcurr[i*2+1] = Hpadre[i*2+1];
+            }else if(dxORsx == 1){  // se figlio sx
+                Hcurr[i*2] = Hpadre[i*2];
+                Hcurr[i*2+1] = dataset[ med*col + i];
+            }else{  // se il root
+                Hcurr[i*2] = minEmax[0];
+                Hcurr[i*2+1]= minEmax[1];
+            }
+        }else{  // non è la colonna interessata del nodo 
+            if( dxORsx == -1 ){
+                Hcurr[i*2] = minEmax[0];
+                Hcurr[i*2+1]= minEmax[1];
+            }else{
+                Hcurr[i*2] = Hpadre[i*2];
+                Hcurr[i*2+1]= Hpadre[i*2+1];
+            }
         }
-        curr->H[i*2] = minEmax[0];
-        curr->H[i*2+1]= minEmax[1];
     }
 
     int dimMin=0, dimMagg=0;
@@ -616,12 +630,13 @@ KDTREE* buildTree(float* dataset,int nElem, int livello, int col, params *input)
     float* datasetMagg = creaDatasetMaggiore(input,dataset,nElem, dimMagg, col,c,indicePunto);
     float* datasetMin = creaDatasetMinore(input,dataset,nElem, dimMin, col,c,indicePunto);
 
-    curr->P = malloc(sizeof(float)); 
+    curr->P = (float*)malloc(sizeof(float)); 
     curr->P = &dataset[indicePunto*col];
 
+    curr->H = Hcurr;
 
-    curr->figlioSx = buildTree(datasetMin, dimMin, livello+1, col, input);
-    curr->figlioDx = buildTree(datasetMagg, dimMagg, livello+1, col, input);
+    curr->figlioSx = buildTree(datasetMin, dimMin, livello+1, col, 1, Hcurr, input);
+    curr->figlioDx = buildTree(datasetMagg, dimMagg, livello+1, col, 0, Hcurr, input);
 
     return curr;
 }
@@ -631,9 +646,9 @@ void kdtree(params* input) {
     // Codificare qui l'algoritmo di costruzione
     // -------------------------------------------------
     if(input->h > 0){
-        input->kdtreeRoot= buildTree(input->U, input->n, 0, input->h, input);
+        input->kdtreeRoot= buildTree(input->U, input->n, 0, input->h, -1, NULL, input);
     }else{    
-        input->kdtreeRoot= buildTree(input->ds, input->n, 0, input->k, input);
+        input->kdtreeRoot= buildTree(input->ds, input->n, 0, input->k, -1, NULL, input);
     }
 }
 
@@ -666,6 +681,7 @@ void distance( float* querySet, int nColonne, int indQ, KDTREE *nodo, params* in
     }
     //distanzaEuclidea(input->Point, input->Qoint, nColonne, dist);
     distanzaEuclidea_ass_64(input->Point, input->Qoint, nColonne, dist);
+
 }
 
 
@@ -680,17 +696,18 @@ void ricercaRange(float* dataSet, float* querySet, int nColonne, KDTREE *n, int 
             input-> Qoint[i]= querySet[indQ*nColonne+ i];
         }
 
-
+        dist=0.0;
         //distanzaEuclidea(n->P, input-> Qoint, nColonne, &dist);
         distanzaEuclidea_ass_64(n->P, input-> Qoint, nColonne, &dist);
 
         if(  dist <= input->r ){
-            
+
             input->QA[input->nQA]=indQ;
             
             input->pQA[input->nQA] = n->P;
             
             input->nQA+=1;
+        
         }
         if( n->figlioSx != NULL){
             ricercaRange(dataSet, querySet, nColonne, n->figlioSx, indQ, input);
@@ -715,12 +732,11 @@ void range_query(params* input) {
     // Codificare qui l'algoritmo di ricerca
     if(input->h>0){
         centraMediaQS(input);
-        //prodMatrici(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
-        prodMatr_ass_64(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
+        
+        prodMatrici(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
+        //prodMatr_ass_64(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
 
-    // Calcola il risultato come una matrice di nQA coppie di interi
-    // (id_query, id_vicino)
-    // o in altro formato
+        // Calcola il risultato
         int i;
 
         for(i=0; i<input->nq; i++){

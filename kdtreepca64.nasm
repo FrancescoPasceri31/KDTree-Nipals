@@ -62,7 +62,7 @@ section .text			; Sezione contenente il codice macchina
 ;	getmem	<size>,<elements>
 ;
 ; alloca un'area di memoria di <size>*<elements> bytes
-; (allineata a 16 bytes) e restituisce in EAX
+; (allineata a 16 bytes) e restituisce in rax
 ; l'indirizzo del primo bytes del blocco allocato
 ; (funziona mediante chiamata a funzione C, per cui
 ; altri registri potrebbero essere modificati)
@@ -883,7 +883,7 @@ sottrazioneMatrici_ass_64:
 			mov rax, 32
 			mul rcx
 			add rax,rdi
-			; ho ottenuto indiceRiga*(nColonne*4 byte) + (32 byte*indiceColonna) [rsi*r11*4 + 32*ecx]
+			; ho ottenuto indiceRiga*(nColonne*4 byte) + (32 byte*indiceColonna) [rsi*r11*4 + 32*rcx]
 			mov rdx, r8
 			vmovups ymm0, [rdx+rax]	; ho caricato la prima riga
 			mov rdx, r9
@@ -960,7 +960,7 @@ sottrazioneMatrici_ass_64:
 			mov rax, 32
 			mul rcx
 			add rax,rdi
-			; ho ottenuto indiceRiga*(nColonne*4 byte) + (16 byte*indiceColonna) [esi*[ebp+20]*4 + 16*ecx]
+			; ho ottenuto indiceRiga*(nColonne*4 byte) + (16 byte*indiceColonna) [rsi*[ebp+20]*4 + 16*rcx]
 			mov rdx, r14
 			vmovups [rdx+rax], ymm0	; ho caricato la prima riga
 
@@ -1009,7 +1009,7 @@ sottrazioneMatrici_ass_64:
 			; in memoria
 
 			sub rsi,3
-			; riporto esi al valore del ciclo esterno 1
+			; riporto rsi al valore del ciclo esterno 1
 
 			add rcx,1
 			jmp ciclo_interno_1_SM
@@ -1018,7 +1018,7 @@ sottrazioneMatrici_ass_64:
 		
 		xor rdi,rdi
 		; ci manca il ciclo interno 2 in cui cicliamo sulle singole colonne dopo aver
-		; controllato che non abbiamo raggiunto il nColonne giusto (ecx*4 == nColonne)
+		; controllato che non abbiamo raggiunto il nColonne giusto (rcx*4 == nColonne)
 		mov rdx,0
 		mov rax,8
 		mul rcx
@@ -1124,7 +1124,7 @@ sottrazioneMatrici_ass_64:
 			mov rdx,0
 			mov rax,4
 			mul rcx
-			mov rbx, rax ; in ebx ho ecx*4 che è un indice di colonna		
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
 			mov rdx,0
 			mov rax, r11
 			mul dword[quattro]
@@ -1139,7 +1139,7 @@ sottrazioneMatrici_ass_64:
 			mov rdx,0
 			mov rax,4
 			mul rcx
-			mov rbx, rax ; in ebx ho ecx*4 che è un indice di colonna		
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
 			mov rdx,0
 			mov rax, r11
 			mul dword[quattro]
@@ -1154,7 +1154,7 @@ sottrazioneMatrici_ass_64:
 			mov rdx,0
 			mov rax,4
 			mul rcx
-			mov rbx, rax ; in ebx ho ecx*4 che è un indice di colonna		
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna		
 			mov rdx,0
 			mov rax, r11
 			mul dword[quattro]
@@ -1169,7 +1169,7 @@ sottrazioneMatrici_ass_64:
 			mov rax,rsi
 			mov rsi,rax
 
-			add ecx,1
+			add rcx,1
 			jmp ciclo_interno_2_SM
 
 		concluso_4_righe_SM:
@@ -1199,7 +1199,7 @@ sottrazioneMatrici_ass_64:
 		; in rsi ho l'indice riga
 		mov rdx,0
 		mov rax, r11
-		div dword[otto] ; eax = nColonne/4
+		div dword[otto] ; rax = nColonne/4
 		mov rbx, rax
 
 		vxorps ymm7,ymm7,ymm7
@@ -1265,7 +1265,7 @@ sottrazioneMatrici_ass_64:
 			mul dword[quattro]
 			mul rsi
 			add rax,rbx
-			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
 			mov rdx, r8
 			vmovss xmm0, [rdx+rax]
 			mov rdx, r9
@@ -1277,13 +1277,13 @@ sottrazioneMatrici_ass_64:
 			mov rdx,0
 			mov rax,4
 			mul rcx
-			mov rbx, rax ; in ebx ho ecx*4 che è un indice di colonna	
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna	
 			mov rdx,0
 			mov rax, r11
 			mul dword[quattro]
 			mul rsi
 			add rax,rbx
-			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [esi*eax + ebx]
+			; ho calcolato indiceRiga*(nColonne*4)+indiceColonna [rsi*rax + rbx]
 			mov rdx, r14
 			vmovss [rdx+rax],xmm0
 
@@ -1569,7 +1569,7 @@ prodMatrVett_ass_64:
 			mov rdx,0
 			mov rax,rsi
 			mov rsi,rax
-			; riporto esi al valore del ciclo esterno 1
+			; riporto rsi al valore del ciclo esterno 1
 
 
 			add rcx,1
@@ -1788,7 +1788,7 @@ prodMatrVett_ass_64:
 		; in rsi ho l'indice riga
 		mov rdx,0
 		mov rax, r11
-		div dword[otto] ; eax = nColonne/8
+		div dword[otto] ; rax = nColonne/8
 		mov rbx, rax
 
 		vxorps ymm9,ymm9, ymm9
@@ -1849,7 +1849,7 @@ prodMatrVett_ass_64:
 			mov rdx,0
 			mov rax,4
 			mul rcx
-			mov rbx, rax ; in ebx ho ecx*4 che è un indice di colonna	
+			mov rbx, rax ; in rbx ho rcx*4 che è un indice di colonna	
 			mov rdx,0
 			mov rax, r11
 			mul dword[quattro]
@@ -1952,7 +1952,7 @@ trasponi_ass_64:
 			mov rdx,0
 			mov rax,32
 			mul rdi
-			add rax,rcx ; rax = nCol*4*rsi + rdi*32 [esi indice riga, edi indice colonna]
+			add rax,rcx ; rax = nCol*4*rsi + rdi*32 [rsi indice riga, rdi indice colonna]
 			mov rdx,r8
 			vmovups ymm0,[rdx+rax]
 
@@ -2189,18 +2189,18 @@ trasponi_ass_64:
 			mov rax,r10
 			mul dword[quattro]
 			mul rsi
-			mov rcx,rax ; ecx = eax = nCol*4*esi
+			mov rcx,rax ; rcx = rax = nCol*4*rsi
 			mov rdx,0
 			mov rax,4
 			mul rdi
-			add rax,rcx ; eax = nCol*4*esi + edi*4 [esi indice riga, edi indice colonna]
+			add rax,rcx ; rax = nCol*4*rsi + rdi*4 [rsi indice riga, rdi indice colonna]
 			mov rdx,r8
 			vmovss xmm0,[rdx+rax]
 
 			mov rdx,0
 			mov rax,4
 			mul rsi
-			mov rcx,rax ; ecx = esi*4
+			mov rcx,rax ; rcx = rsi*4
 
 			mov rdx,0
 			mov rax,r9
@@ -2263,7 +2263,7 @@ divisioneVettoreScalare_ass_64:
 
 		mov rbx,r8 ; prendo il puntatore all'array
 		mov rdx,0
-		mov rax, 32 ; moltiplico esi per 32 in maniera tale da saltare 8 elementi
+		mov rax, 32 ; moltiplico rsi per 32 in maniera tale da saltare 8 elementi
 		mul rsi
 		vmovups ymm0, [rbx+rax] ; prendo 8 elementi
 
@@ -2280,7 +2280,7 @@ divisioneVettoreScalare_ass_64:
 	mov rdx,0
 	mov rax,8
 	mul rsi
-	mov rsi,rax ; in esi ho esi*4 = colonna corrente da cui iniziare l'analisi singola
+	mov rsi,rax ; in rsi ho rsi*4 = colonna corrente da cui iniziare l'analisi singola
 
 	ciclo_resto_DVS:
 		cmp rsi,r10
@@ -2383,7 +2383,7 @@ distanzaEuclidea_ass_64:
 		mov rdx,0
 		mov rax,8
 		mul rsi
-		mov rsi,rax ; in esi ho esi*4 = colonna corrente da cui iniziare l'analisi singola
+		mov rsi,rax ; in rsi ho rsi*4 = colonna corrente da cui iniziare l'analisi singola
 
 		ciclo_resto_DE:
 			cmp rsi,r10
@@ -2394,8 +2394,8 @@ distanzaEuclidea_ass_64:
 			mul rsi
 			mov rbx,r8
 			mov rcx,r9
-			vmovss xmm0, [ebx+eax]
-			vmovss xmm1, [ecx+eax]
+			vmovss xmm0, [rbx+rax]
+			vmovss xmm1, [rcx+rax]
 			; ho caricato i due elementi
 
 			vsubss xmm0,xmm1
@@ -2498,8 +2498,8 @@ prodScalare_ass_64:
 			mov rbx,r8
 			mov rcx,r10
 
-			vmovss xmm0, [ebx+eax]
-			vmovss xmm1, [ecx+eax]
+			vmovss xmm0, [rbx+rax]
+			vmovss xmm1, [rcx+rax]
 			; ho caricato i due elementi
 
 			vmulss xmm0,xmm0,xmm1
@@ -2577,7 +2577,7 @@ calcolaNorma_ass_64:
 		je continua_CN
 		mov rbx,r8 ; prendo il puntatore all'array
 		mov rdx,0
-		mov rax, 32 ; moltiplico esi per 32 in maniera tale da saltare 8 elementi
+		mov rax, 32 ; moltiplico rsi per 32 in maniera tale da saltare 8 elementi
 		mul rsi
 		vmovups ymm0, [rbx+rax] ; prendo 8 elementi
 		vmulps ymm0,ymm0,ymm0
@@ -2610,7 +2610,7 @@ calcolaNorma_ass_64:
 		vmulss xmm0,xmm0,xmm0
 		vaddss xmm1, xmm1,xmm0
 		
-		add esi,1
+		add rsi,1
 		jmp ciclo_resto_CN
 
 	fine_calcolaNorma_ass_CN:
