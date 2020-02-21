@@ -622,7 +622,7 @@ KDTREE* buildTree(float* dataset,int nElem, int livello, int col, int dxORsx, fl
     float* datasetMagg = creaDatasetMaggiore(input,dataset,nElem, dimMagg, col,c,indicePunto);
     float* datasetMin = creaDatasetMinore(input,dataset,nElem, dimMin, col,c,indicePunto);
 
-    curr->P = (float*)malloc(sizeof(float)); 
+    //curr->P = (float*)malloc(sizeof(float)); 
     curr->P = &dataset[indicePunto*col];
 
     curr->H = Hcurr;
@@ -646,7 +646,6 @@ void kdtree(params* input) {
     }
     
 }
-
 
 /*
 * 	===================================================================================================================

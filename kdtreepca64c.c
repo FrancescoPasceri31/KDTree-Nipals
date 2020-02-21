@@ -734,8 +734,8 @@ void range_query(params* input) {
     if(input->h>0){
         centraMediaQS(input);
         
-        prodMatrici(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
-        //prodMatr_ass_64(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
+        //prodMatrici(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
+        prodMatr_ass_64(input->qs, input->nq, input->k, input->V, input->k, input->h, input->qsRidotto);
 
         // Calcola il risultato
         int i;
